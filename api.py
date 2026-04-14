@@ -197,9 +197,44 @@ def _generate_sync(job_id: str, req: GenerateRequest) -> None:
         _gen_semaphore.release()
 
 
+def _find_ffmpeg() -> str:
+    """
+    Locate the ffmpeg binary.
+
+    Search order:
+      1. FFMPEG_PATH env-var  (set by startup.sh on Azure)
+      2. PATH via shutil.which
+      3. Common Linux paths
+      4. Homebrew path on macOS
+    """
+    import shutil
+
+    candidate = (
+        os.environ.get("FFMPEG_PATH")
+        or shutil.which("ffmpeg")
+        or "/home/bin/ffmpeg"        # Azure cached location
+        or "/usr/bin/ffmpeg"         # standard Linux
+        or "/usr/local/bin/ffmpeg"   # Homebrew macOS
+    )
+    if candidate and Path(candidate).exists():
+        return candidate
+    raise FileNotFoundError(
+        "ffmpeg not found. On Azure ensure startup.sh ran; locally run: brew install ffmpeg"
+    )
+
+
 def _write_mp3(audio: np.ndarray, sr: int, out_path: Path, bitrate: str = "192k") -> None:
+    """
+    Write a numpy audio array to an MP3 file.
+
+    Uses ffmpeg via subprocess directly — this avoids pydub's internal
+    ffprobe auto-detection which fails when ffmpeg is not on the system PATH
+    (e.g. Azure App Service containers).
+    """
     import soundfile as sf
-    from pydub import AudioSegment
+    import subprocess
+
+    ffmpeg = _find_ffmpeg()
 
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
         tmp_wav = tmp.name
@@ -209,9 +244,24 @@ def _write_mp3(audio: np.ndarray, sr: int, out_path: Path, bitrate: str = "192k"
         if peak > 0:
             data = (data / peak * 0.97).astype(np.float32)
         sf.write(tmp_wav, data, sr, format="WAV", subtype="FLOAT")
-        sound = AudioSegment.from_wav(tmp_wav)
+
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        sound.export(str(out_path), format="mp3", bitrate=bitrate)
+
+        # Call ffmpeg directly — no pydub, no ffprobe probe step
+        result = subprocess.run(
+            [
+                ffmpeg, "-y",           # overwrite without asking
+                "-i", tmp_wav,          # input WAV
+                "-codec:a", "libmp3lame",
+                "-b:a", bitrate,
+                "-q:a", "2",            # VBR quality hint (1=best, 9=worst)
+                str(out_path),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(f"ffmpeg failed:\n{result.stderr[-1000:]}")
     finally:
         try:
             os.unlink(tmp_wav)

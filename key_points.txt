@@ -68,3 +68,59 @@ python3 main.py "lively folk tune" --crescendo verse-chorus
 
 > uvicorn api:app --host 0.0.0.0 --port 8000 --reload
 
+
+==== deploy to azure app service
+
+app settings update
+> az webapp config appsettings set \
+  --resource-group rg-cad-planner-i1-d \
+  --name ntt-sap-tkt \
+  --slot audio-gen \
+  --settings \
+    SCM_DO_BUILD_DURING_DEPLOYMENT=true \
+    HF_HOME=/home/.cache/huggingface \
+    TRANSFORMERS_CACHE=/home/.cache/huggingface \
+    HF_HUB_DISABLE_PROGRESS_BARS=1 \
+    WEBSITES_CONTAINER_START_TIME_LIMIT=1800 \
+    SCM_COMMAND_IDLE_TIMEOUT=3600
+
+startup command update
+> az webapp config set \
+  --resource-group rg-cad-planner-i1-d \
+  --name ntt-sap-tkt \
+  --slot audio-gen \
+  --startup-file "bash startup.sh"
+
+cd "./ark-audio-gen"
+
+zip -r deploy.zip . \
+  -x ".venv/*" \
+  -x "generated/*" \
+  -x ".git/*" \
+  -x "__pycache__/*" \
+  -x "*.pyc" \
+  -x "*.pyo" \
+  -x ".DS_Store" \
+  -x "*.mp3" \
+  -x "*.wav" \
+  -x "*.flac" \
+  -x "deploy.zip"
+
+# Confirm size (should be < 200 KB — no model weights, no venv)
+ls -lh deploy.zip
+
+deploy the zip
+az webapp deploy \
+  --resource-group rg-cad-planner-i1-d \
+  --name ntt-sap-tkt \
+  --slot audio-gen \
+  --src-path deploy.zip \
+  --type zip \
+  --async false
+
+tail the logs in another terminal
+
+az webapp log tail \
+  --resource-group rg-cad-planner-i1-d \
+  --name ntt-sap-tkt \
+  --slot audio-gen 

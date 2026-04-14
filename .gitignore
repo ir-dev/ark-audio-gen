@@ -474,3 +474,4 @@ Thumbs.db
 .deployment
 .azure/
 oryx-manifest.toml
+deploy.zip

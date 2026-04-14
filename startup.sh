@@ -34,6 +34,29 @@ echo " Starting on port ${PORT}"
 echo " HF cache: ${HF_HOME}"
 echo "======================================"
 
+# ── Install ffmpeg (not pre-installed in Azure App Service Python containers) ──
+# We cache the binaries in /home/bin (persistent) so apt-get only runs once.
+FFMPEG_CACHE="/home/bin"
+mkdir -p "${FFMPEG_CACHE}"
+
+if [ ! -f "${FFMPEG_CACHE}/ffmpeg" ]; then
+    echo "[startup] ffmpeg not found in cache — installing via apt-get..."
+    apt-get update -qq
+    apt-get install -y -qq --no-install-recommends ffmpeg
+    # Copy to persistent /home/bin so future restarts skip apt-get entirely
+    cp "$(which ffmpeg)"  "${FFMPEG_CACHE}/ffmpeg"
+    cp "$(which ffprobe)" "${FFMPEG_CACHE}/ffprobe"
+    echo "[startup] ffmpeg installed and cached at ${FFMPEG_CACHE}"
+else
+    echo "[startup] ffmpeg found in cache — skipping apt-get"
+fi
+
+# Put the cached binaries on PATH so pydub and subprocesses can find them
+export PATH="${FFMPEG_CACHE}:${PATH}"
+# Also export explicit paths so api.py can use them directly
+export FFMPEG_PATH="${FFMPEG_CACHE}/ffmpeg"
+export FFPROBE_PATH="${FFMPEG_CACHE}/ffprobe"
+
 # ── Pre-warm: download MusicGen model before accepting traffic ─────────────────
 # Runs once; subsequent starts skip download because the cache already exists.
 # This avoids a slow first-user experience and prevents mid-request timeouts.
