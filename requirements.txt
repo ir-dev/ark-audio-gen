@@ -1,0 +1,23 @@
+# ── Force CPU-only PyTorch wheel (avoids 2.5 GB CUDA download on Azure) ───────
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+# ── Core AI / ML ──────────────────────────────────────────────────────────────
+torch>=2.1.0
+torchaudio>=2.1.0
+transformers>=4.40.0
+
+# ── Audio I/O & processing ────────────────────────────────────────────────────
+librosa>=0.10.1
+scipy>=1.11.0
+numpy>=1.24.0
+soundfile>=0.12.1
+pydub>=0.25.1
+
+# ── Web framework ─────────────────────────────────────────────────────────────
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+gunicorn>=22.0.0
+
+# ── CLI (used by main.py) ─────────────────────────────────────────────────────
+typer[all]>=0.12.0
+rich>=13.7.0

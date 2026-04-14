@@ -3,6 +3,10 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+.venv/
+.DS_Store
+*.mp3
+
 # User-specific files
 *.rsuser
 *.suo
@@ -416,3 +420,57 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.spec
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Generated output ──────────────────────────────────────────────────────────
+generated/
+*.mp3
+*.wav
+*.flac
+*.ogg
+
+# ── HuggingFace model cache (large – never commit) ────────────────────────────
+.cache/
+~/.cache/huggingface/
+
+# ── Environment & secrets ─────────────────────────────────────────────────────
+.env
+.env.*
+*.pem
+*.key
+
+# ── OS & editor ──────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ── Logs & temp ───────────────────────────────────────────────────────────────
+*.log
+*.tmp
+*.bak
+
+# ── Azure deployment artefacts ────────────────────────────────────────────────
+.deployment
+.azure/
+oryx-manifest.toml

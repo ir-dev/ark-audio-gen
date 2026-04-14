@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Sing-Along Generator</title>
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<!-- ═══════════ HEADER ═══════════ -->
+<header class="site-header">
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">🎵</span>
+      <span class="logo-text">SingAlong<span class="logo-ai">AI</span></span>
+    </div>
+    <p class="tagline">Generate a backing track from any melody — in seconds</p>
+  </div>
+</header>
+
+<!-- ═══════════ MAIN ═══════════ -->
+<main class="container">
+
+  <!-- ── Sample melodies ── -->
+  <section class="samples-section">
+    <h2 class="section-title">
+      <span class="icon">🌍</span> Start with a sample melody
+    </h2>
+    <p class="section-hint">Click any card to auto-fill the form</p>
+    <div class="samples-grid" id="samplesGrid">
+      <!-- populated by JS -->
+    </div>
+  </section>
+
+  <!-- ── Generator form ── -->
+  <section class="form-section">
+    <h2 class="section-title"><span class="icon">🎛️</span> Configure your track</h2>
+
+    <form id="genForm" novalidate>
+
+      <!-- Melody input -->
+      <div class="field">
+        <label for="melodyInput" class="field-label">
+          Describe your melody <span class="required">*</span>
+        </label>
+        <textarea
+          id="melodyInput"
+          name="melody"
+          rows="3"
+          maxlength="600"
+          placeholder="e.g. A cheerful whistling tune in C major with a rising chorus…"
+          required
+        ></textarea>
+        <span class="char-count"><span id="charCount">0</span> / 600</span>
+      </div>
+
+      <!-- Quick settings row -->
+      <div class="fields-row">
+        <div class="field">
+          <label for="genre" class="field-label">Genre</label>
+          <select id="genre" name="genre">
+            <option value="">Auto-detect</option>
+            <option value="pop">Pop</option>
+            <option value="rock">Rock</option>
+            <option value="jazz">Jazz</option>
+            <option value="classical">Classical</option>
+            <option value="folk">Folk</option>
+            <option value="electronic">Electronic</option>
+            <option value="hip-hop">Hip-Hop</option>
+            <option value="r-and-b">R&amp;B / Soul</option>
+            <option value="ambient">Ambient</option>
+            <option value="reggae">Reggae</option>
+            <option value="bossa-nova">Bossa Nova</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="mood" class="field-label">Mood</label>
+          <select id="mood" name="mood">
+            <option value="">Auto-detect</option>
+            <option value="happy">Happy</option>
+            <option value="uplifting">Uplifting</option>
+            <option value="energetic">Energetic</option>
+            <option value="calm">Calm</option>
+            <option value="romantic">Romantic</option>
+            <option value="sad">Sad / Melancholic</option>
+            <option value="nostalgic">Nostalgic</option>
+            <option value="playful">Playful</option>
+            <option value="mysterious">Mysterious</option>
+            <option value="aggressive">Aggressive</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="duration" class="field-label">
+            Duration: <strong id="durationVal">15s</strong>
+          </label>
+          <input type="range" id="duration" name="duration"
+                 min="5" max="20" step="1" value="15" />
+          <div class="range-labels"><span>5s</span><span>20s</span></div>
+        </div>
+      </div>
+
+      <!-- Advanced toggle -->
+      <details class="advanced-toggle">
+        <summary>⚙️ Advanced options</summary>
+        <div class="advanced-grid">
+
+          <div class="field">
+            <label for="instruments" class="field-label">Instruments</label>
+            <input type="text" id="instruments" name="instruments"
+                   placeholder="piano, guitar, drums, violin…" maxlength="200" />
+          </div>
+
+          <div class="field">
+            <label for="frequency" class="field-label">Frequency emphasis</label>
+            <select id="frequency" name="frequency_range">
+              <option value="">Balanced (auto)</option>
+              <option value="bass">Bass-heavy</option>
+              <option value="mid">Warm mid-range</option>
+              <option value="treble">Bright treble</option>
+              <option value="full">Full spectrum</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="crescendo" class="field-label">Crescendo pattern</label>
+            <select id="crescendo" name="crescendo">
+              <option value="rise-fall">Rise then fall (default)</option>
+              <option value="rise">Rise to end</option>
+              <option value="fall">Fall to end</option>
+              <option value="natural">Natural S-curve</option>
+              <option value="verse-chorus">Verse–chorus waves</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="guidance" class="field-label">
+              Guidance: <strong id="guidanceVal">3.5</strong>
+              <span class="hint">(higher = closer to prompt)</span>
+            </label>
+            <input type="range" id="guidance" name="guidance_scale"
+                   min="1" max="8" step="0.5" value="3.5" />
+            <div class="range-labels"><span>1 free</span><span>8 strict</span></div>
+          </div>
+
+          <div class="field">
+            <label for="temperature" class="field-label">
+              Creativity: <strong id="tempVal">1.05</strong>
+              <span class="hint">(higher = more varied)</span>
+            </label>
+            <input type="range" id="temperature" name="temperature"
+                   min="0.5" max="1.5" step="0.05" value="1.05" />
+            <div class="range-labels"><span>0.5 crisp</span><span>1.5 random</span></div>
+          </div>
+
+        </div>
+      </details>
+
+      <button type="submit" id="generateBtn" class="btn-generate">
+        <span class="btn-icon">🎶</span>
+        <span id="btnText">Generate Track</span>
+      </button>
+
+    </form>
+  </section>
+
+  <!-- ── Progress ── -->
+  <section id="progressSection" class="result-section hidden">
+    <div class="progress-card">
+      <div class="steps" id="stepsList">
+        <!-- Steps injected by JS -->
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" id="progressBar" style="width:0%"></div>
+      </div>
+      <p class="status-message" id="statusMessage">Starting…</p>
+    </div>
+  </section>
+
+  <!-- ── Result ── -->
+  <section id="resultSection" class="result-section hidden">
+    <div class="result-card">
+      <div class="result-header">
+        <span class="result-icon">✅</span>
+        <h3>Your track is ready!</h3>
+      </div>
+      <div class="track-meta" id="trackMeta"></div>
+      <audio id="audioPlayer" controls class="audio-player"></audio>
+      <div class="result-actions">
+        <a id="downloadBtn" class="btn-download" download="ai_singalong_track.mp3">
+          ⬇️ Download MP3
+        </a>
+        <button id="newTrackBtn" class="btn-new">🔄 Make another</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Error ── -->
+  <section id="errorSection" class="result-section hidden">
+    <div class="error-card">
+      <span class="error-icon">⚠️</span>
+      <h3>Something went wrong</h3>
+      <p id="errorMessage"></p>
+      <button id="retryBtn" class="btn-retry">Try again</button>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <p>Powered by <strong>Meta MusicGen</strong> · Hosted on <strong>Azure App Service</strong></p>
+</footer>
+
+<script src="/app.js"></script>
+</body>
+</html>

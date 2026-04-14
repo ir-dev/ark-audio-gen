@@ -1,0 +1,70 @@
+> python3 -m venv .venv
+
+> source .venv/bin/activate
+
+> pip install --upgrade pip
+
+> pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+
+> pip install -r requirements.txt
+
+> python main.py --help
+
+== test
+> python main.py "a cheerful whistling tune in C major" --duration 10 --output test.mp3
+
+> python main.py "jean kelly type of song" --duration 10 --output test_k1.mp3
+
+> python main.py "generate a typical ilayaraja song which reflects tamil" --duration 10 --output test_k1.mp3
+
+> # Activate venv first every time you open a new terminal
+source .venv/bin/activate
+
+# Auto genre/mood from description
+python main.py "lively folk tune with a bouncy rhythm"
+
+# Full manual control
+python main.py "jazz piano riff with walking bass" \
+  --genre jazz --mood uplifting \
+  --instruments piano,bass,drums \
+  --duration 15 --output jazz_track.mp3
+
+# Use an audio file as the melody source
+python main.py /path/to/my_melody.wav \
+  --genre pop --mood happy --output singalong.mp3
+
+# Shorter test run (faster on CPU)
+python main.py "upbeat pop chorus melody" \
+  --duration 8 --output quick_test.mp3
+
+# More adventurous dynamics
+python main.py "energetic rock anthem" \
+  --genre rock --mood energetic \
+  --crescendo verse-chorus --duration 20
+
+
+
+# Install deps
+pip3 install -r requirements.txt
+
+# Text melody, auto-inferred style
+python3 main.py "a cheerful whistling melody in C major"
+
+# Full explicit control
+python3 main.py "jazz piano riff with walking bass" \
+  --genre jazz --mood uplifting \
+  --instruments piano,bass,drums \
+  --duration 15 --output my_track.mp3
+
+# Audio file as melody source (uses melody-conditioned model)
+python3 main.py /path/to/melody.wav \
+  --genre pop --mood happy --output sing_along.mp3
+
+# Crescendo patterns: rise | fall | rise-fall | natural | verse-chorus
+python3 main.py "lively folk tune" --crescendo verse-chorus
+
+
+=== web setup
+
+> uvicorn api:app --host 0.0.0.0 --port 8000 --reload
+
