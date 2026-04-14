@@ -336,6 +336,12 @@ pip show torch transformers fastapi uvicorn gunicorn librosa pydub soundfile
 
 ---
 
+## Developer and AI attribution
+
+- Author: **Immanuel R** (Along with Claude Code)
+- Contact: raj@immanuel.co
+---
+
 ## License
 
 This project uses **Meta MusicGen** via HuggingFace Transformers, released under the
