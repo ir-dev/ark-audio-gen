@@ -34,26 +34,57 @@ echo " Starting on port ${PORT}"
 echo " HF cache: ${HF_HOME}"
 echo "======================================"
 
-# ── Install ffmpeg (not pre-installed in Azure App Service Python containers) ──
-# We cache the binaries in /home/bin (persistent) so apt-get only runs once.
+# ── Install static ffmpeg (self-contained, no shared-library dependencies) ─────
+#
+# WHY static and not apt-get:
+#   Azure App Service containers are ephemeral. On every container recycle or
+#   base-image update, apt-installed .so files (/usr/lib/libavdevice.so etc.)
+#   are wiped. A cached dynamic binary then fails with "cannot open shared
+#   object file". A statically-compiled binary bundles everything inside the
+#   single executable and survives in /home (persistent storage) indefinitely.
+#
+# WHY we test execution, not just file existence:
+#   After a container update the old binary may still exist in /home/bin but
+#   silently fail. We run `ffmpeg -version` to confirm it actually works.
+# ──────────────────────────────────────────────────────────────────────────────
 FFMPEG_CACHE="/home/bin"
 mkdir -p "${FFMPEG_CACHE}"
 
-if [ ! -f "${FFMPEG_CACHE}/ffmpeg" ]; then
-    echo "[startup] ffmpeg not found in cache — installing via apt-get..."
-    apt-get update -qq
-    apt-get install -y -qq --no-install-recommends ffmpeg
-    # Copy to persistent /home/bin so future restarts skip apt-get entirely
-    cp "$(which ffmpeg)"  "${FFMPEG_CACHE}/ffmpeg"
-    cp "$(which ffprobe)" "${FFMPEG_CACHE}/ffprobe"
-    echo "[startup] ffmpeg installed and cached at ${FFMPEG_CACHE}"
+# Test if the cached binary actually executes successfully
+if "${FFMPEG_CACHE}/ffmpeg" -version >/dev/null 2>&1; then
+    echo "[startup] ffmpeg OK (static binary verified at ${FFMPEG_CACHE}/ffmpeg)"
 else
-    echo "[startup] ffmpeg found in cache — skipping apt-get"
+    echo "[startup] ffmpeg missing or broken — downloading static build..."
+
+    # Static build from johnvansickle.com — no .so dependencies, Linux x86_64
+    FFMPEG_URL="https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz"
+    TMP_ARCHIVE="/tmp/ffmpeg-static.tar.xz"
+    TMP_DIR="/tmp/ffmpeg-static"
+
+    echo "[startup]   Downloading ${FFMPEG_URL}..."
+    curl -fsSL --retry 3 --retry-delay 5 "${FFMPEG_URL}" -o "${TMP_ARCHIVE}"
+
+    echo "[startup]   Extracting..."
+    rm -rf "${TMP_DIR}" && mkdir -p "${TMP_DIR}"
+    tar -xf "${TMP_ARCHIVE}" -C "${TMP_DIR}" --strip-components=1
+
+    cp "${TMP_DIR}/ffmpeg"  "${FFMPEG_CACHE}/ffmpeg"
+    cp "${TMP_DIR}/ffprobe" "${FFMPEG_CACHE}/ffprobe"
+    chmod +x "${FFMPEG_CACHE}/ffmpeg" "${FFMPEG_CACHE}/ffprobe"
+
+    rm -rf "${TMP_ARCHIVE}" "${TMP_DIR}"
+
+    # Final sanity check
+    if "${FFMPEG_CACHE}/ffmpeg" -version >/dev/null 2>&1; then
+        echo "[startup] Static ffmpeg installed and verified at ${FFMPEG_CACHE}"
+    else
+        echo "[startup] ERROR: ffmpeg still not working after download. Check logs."
+        exit 1
+    fi
 fi
 
-# Put the cached binaries on PATH so pydub and subprocesses can find them
+# Expose to all child processes (gunicorn workers, subprocesses in api.py)
 export PATH="${FFMPEG_CACHE}:${PATH}"
-# Also export explicit paths so api.py can use them directly
 export FFMPEG_PATH="${FFMPEG_CACHE}/ffmpeg"
 export FFPROBE_PATH="${FFMPEG_CACHE}/ffprobe"
 
