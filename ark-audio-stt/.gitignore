@@ -1,0 +1,10 @@
+# .NET build output
+bin/
+obj/
+
+# Downloaded Whisper ggml models (large binaries, fetched on first run)
+App_Data/
+*.bin
+
+# User-specific
+*.user
