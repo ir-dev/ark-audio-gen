@@ -45,14 +45,20 @@ Two interchangeable CPU engines implement `ISummarizationService`; pick one or r
 and **compare them side by side** in the UI. The API selects one per call via the optional
 `model` field (default `lexical`).
 
-| key       | engine                  | summary               | intent                       | notes |
-|-----------|-------------------------|-----------------------|------------------------------|-------|
-| `lexical` | Ark Lexical Engine *(default)* | frequency-based extractive | rule/cue based               | no model, instant, fully offline |
-| `minilm`  | MiniLM Semantic (ONNX)  | embedding centroid    | zero-shot embedding similarity | `all-MiniLM-L6-v2` (int8 ONNX, ~23 MB) downloaded once on first use; ~5–10 ms warm |
+| key          | engine                  | summary                        | intent                       | notes |
+|--------------|-------------------------|--------------------------------|------------------------------|-------|
+| `lexical`    | Ark Lexical Engine *(default)* | frequency-based **extractive** | rule/cue based               | no model, instant, fully offline |
+| `minilm`     | MiniLM Semantic (ONNX)  | embedding-centroid **extractive** | zero-shot embedding similarity | `all-MiniLM-L6-v2` (int8 ONNX, ~23 MB), ~5–10 ms warm |
+| `abstractive`| Abstractive (DistilBART, ONNX) | **abstractive** — *generates* new condensed text | rule/cue based | `distilbart-cnn-6-6` (int8 ONNX, ~270 MB) downloaded once; ~0.5–1 s warm |
+
+The two extractive engines select existing sentences, so they can't shorten a single-sentence
+input (they echo it). The **abstractive** engine generates a brand-new, condensed summary, so it
+genuinely compresses short text too. Swap `Abstractive:ModelRepo` to `Xenova/distilbart-xsum-6-6`
+for even more aggressive single-sentence abstraction.
 
 Entities and keywords are deterministic and shared across engines (`Services/SharedNlp.cs`).
-The MiniLM model + vocab are pulled from Hugging Face and cached under `App_Data/models/`;
-everything then runs locally on the CPU — no GPU, no cloud. Add more engines by implementing
+ONNX models + vocab are pulled from Hugging Face and cached under `App_Data/models/`; everything
+then runs locally on the CPU — no GPU, no cloud. Add more engines by implementing
 `ISummarizationService` and registering it — the UI and API pick them up automatically.
 
 ## Running locally

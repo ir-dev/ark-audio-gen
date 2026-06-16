@@ -124,11 +124,12 @@
         <div class="col-md-4">
             <div class="card feature-card">
                 <div class="icon">🔀</div>
-                <h5>Two engines, compare live</h5>
+                <h5>Three engines, compare live</h5>
                 <p class="text-muted mb-0">
-                    A fast lexical engine (default) and a semantic <strong>MiniLM</strong>
-                    embedding model (ONNX, CPU). Run either — or both at once and compare their
-                    output side by side. Choose per request via the API <code>model</code> field.
+                    A fast <strong>lexical</strong> engine (default), a semantic <strong>MiniLM</strong>
+                    embedding model, and an <strong>abstractive</strong> DistilBART summarizer that
+                    generates new condensed text — all on CPU. Run one or several and compare side by
+                    side. Choose per request via the API <code>model</code> field.
                 </p>
             </div>
         </div>
@@ -203,7 +204,7 @@
             <ul class="text-muted">
                 <li>JSON in, JSON out — <code>intent</code>, <code>summary</code>, <code>entities</code></li>
                 <li>Control summary length with <code>maxSentences</code> (1–10)</li>
-                <li>Pick the engine with <code>model</code> (<code>lexical</code> or <code>minilm</code>); defaults to lexical</li>
+                <li>Pick the engine with <code>model</code> (<code>lexical</code>, <code>minilm</code> or <code>abstractive</code>); defaults to lexical</li>
                 <li>Authenticated by a header name <em>you</em> choose</li>
                 <li>Live <code>curl</code> generator built into the web tool</li>
             </ul>

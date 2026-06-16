@@ -55,6 +55,9 @@ builder.Services.AddSingleton<ISummarizationService, SummarizationService>();
 // Optional engine: MiniLM sentence embeddings via ONNX (model downloaded on first use).
 builder.Services.Configure<EmbeddingOptions>(builder.Configuration.GetSection(EmbeddingOptions.SectionName));
 builder.Services.AddSingleton<ISummarizationService, MiniLmSummarizationService>();
+// Optional engine: abstractive seq2seq (DistilBART) via ONNX — generates a condensed summary.
+builder.Services.Configure<AbstractiveOptions>(builder.Configuration.GetSection(AbstractiveOptions.SectionName));
+builder.Services.AddSingleton<ISummarizationService, AbstractiveSummarizationService>();
 builder.Services.AddSingleton<SummarizationEngineProvider>();
 
 var app = builder.Build();

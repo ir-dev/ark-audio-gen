@@ -48,7 +48,7 @@ public sealed class SummarizationService : ISummarizationService
         result.Keywords = SharedNlp.TopKeywords(freq);
 
         result.Summary = BuildSummary(sentences, freq, maxFreq, maxSentences);
-        (result.Intent, result.IntentConfidence) = ClassifyIntent(text);
+        (result.Intent, result.IntentConfidence) = SharedNlp.ClassifyIntent(text);
         result.Entities = SharedNlp.ExtractEntities(text);
 
         result.ProcessingMs = sw.Elapsed.TotalMilliseconds;
@@ -94,55 +94,5 @@ public sealed class SummarizationService : ISummarizationService
             .ToList();
 
         return string.Join(" ", chosen.Select(i => sentences[i].Trim()));
-    }
-
-    // ---- Intent -----------------------------------------------------------
-    private static readonly (string Intent, string[] Cues)[] IntentCues =
-    {
-        ("question",      new[] { "?", "what ", "why ", "how ", "when ", "where ", "who ", "which ", "could you tell", "do you", "does it", "is it", "are there", "can you explain" }),
-        ("request",       new[] { "please", "could you", "can you", "would you", "i need", "i want", "we need", "kindly", "request", "let me know", "send me", "i would like" }),
-        ("complaint",     new[] { "not working", "doesn't work", "does not work", "broken", "issue", "problem", "disappointed", "refund", "terrible", "worst", "angry", "unacceptable", "complaint", "failed", "error", "frustrat", "poor" }),
-        ("praise",        new[] { "thank", "thanks", "great job", "well done", "love it", "love this", "excellent", "awesome", "amazing", "appreciate", "fantastic", "wonderful", "good job", "brilliant" }),
-        ("transactional", new[] { "order", "invoice", "payment", "purchase", "buy ", "subscribe", "cancel", "booking", "reserve", "checkout", "shipment", "delivery", "refund", "billing" }),
-        ("instruction",   new[] { "first,", "firstly", "step ", "then ", "next,", "finally", "follow these", "in order to", "make sure", "you should", "do not", "don't ", "ensure that" }),
-        ("opinion",       new[] { "i think", "i believe", "in my opinion", "i feel", "personally", "it seems", "arguably", "i'd argue", "from my perspective" }),
-        ("announcement",  new[] { "we are pleased", "announcing", "introducing", "we're excited", "launch", "release", "now available", "starting today", "effective immediately" }),
-    };
-
-    private static (string Intent, double Confidence) ClassifyIntent(string text)
-    {
-        var lower = " " + text.ToLowerInvariant() + " ";
-        var scores = new Dictionary<string, double>();
-
-        foreach (var (intent, cues) in IntentCues)
-        {
-            double s = 0;
-            foreach (var cue in cues)
-            {
-                if (cue == "?")
-                {
-                    s += SharedNlp.CountOccurrences(text, '?') * 2.0;
-                }
-                else
-                {
-                    int idx = 0, hits = 0;
-                    while ((idx = lower.IndexOf(cue, idx, StringComparison.Ordinal)) >= 0) { hits++; idx += cue.Length; }
-                    s += hits;
-                }
-            }
-            if (s > 0) scores[intent] = s;
-        }
-
-        // Structural prior: a question mark anywhere strongly suggests a question.
-        if (SharedNlp.CountOccurrences(text, '?') > 0)
-            scores["question"] = scores.GetValueOrDefault("question") + 1.5;
-
-        if (scores.Count == 0)
-            return ("statement", 0.5);
-
-        var total = scores.Values.Sum();
-        var best = scores.OrderByDescending(kv => kv.Value).First();
-        double confidence = Math.Round(0.5 + 0.5 * (best.Value / total), 2);
-        return (best.Key, Math.Clamp(confidence, 0.5, 0.99));
     }
 }

@@ -251,6 +251,56 @@ public static partial class SharedNlp
         return n;
     }
 
+    // ---- Intent (rule/cue based) ------------------------------------------
+    private static readonly (string Intent, string[] Cues)[] IntentCues =
+    {
+        ("question",      new[] { "?", "what ", "why ", "how ", "when ", "where ", "who ", "which ", "could you tell", "do you", "does it", "is it", "are there", "can you explain" }),
+        ("request",       new[] { "please", "could you", "can you", "would you", "i need", "i want", "we need", "kindly", "request", "let me know", "send me", "i would like", "pls", "support to", "need to", "help" }),
+        ("complaint",     new[] { "not working", "doesn't work", "does not work", "broken", "issue", "problem", "disappointed", "refund", "terrible", "worst", "angry", "unacceptable", "complaint", "failed", "error", "frustrat", "poor" }),
+        ("praise",        new[] { "thank", "thanks", "great job", "well done", "love it", "love this", "excellent", "awesome", "amazing", "appreciate", "fantastic", "wonderful", "good job", "brilliant" }),
+        ("transactional", new[] { "order", "invoice", "payment", "purchase", "buy ", "subscribe", "cancel", "booking", "reserve", "checkout", "shipment", "delivery", "refund", "billing" }),
+        ("instruction",   new[] { "first,", "firstly", "step ", "step by step", "steps to", "then ", "next,", "finally", "follow these", "in order to", "make sure", "you should", "do not", "don't ", "ensure that", "configure", "how to" }),
+        ("opinion",       new[] { "i think", "i believe", "in my opinion", "i feel", "personally", "it seems", "arguably", "i'd argue", "from my perspective" }),
+        ("announcement",  new[] { "we are pleased", "announcing", "introducing", "we're excited", "launch", "release", "now available", "starting today", "effective immediately" }),
+    };
+
+    /// <summary>Rule/cue based intent classification, shared across engines.</summary>
+    public static (string Intent, double Confidence) ClassifyIntent(string text)
+    {
+        var lower = " " + text.ToLowerInvariant() + " ";
+        var scores = new Dictionary<string, double>();
+
+        foreach (var (intent, cues) in IntentCues)
+        {
+            double s = 0;
+            foreach (var cue in cues)
+            {
+                if (cue == "?")
+                {
+                    s += CountOccurrences(text, '?') * 2.0;
+                }
+                else
+                {
+                    int idx = 0, hits = 0;
+                    while ((idx = lower.IndexOf(cue, idx, StringComparison.Ordinal)) >= 0) { hits++; idx += cue.Length; }
+                    s += hits;
+                }
+            }
+            if (s > 0) scores[intent] = s;
+        }
+
+        if (CountOccurrences(text, '?') > 0)
+            scores["question"] = scores.GetValueOrDefault("question") + 1.5;
+
+        if (scores.Count == 0)
+            return ("statement", 0.5);
+
+        var total = scores.Values.Sum();
+        var best = scores.OrderByDescending(kv => kv.Value).First();
+        double confidence = Math.Round(0.5 + 0.5 * (best.Value / total), 2);
+        return (best.Key, Math.Clamp(confidence, 0.5, 0.99));
+    }
+
     // ---- Lexicons ---------------------------------------------------------
     public static readonly HashSet<string> CalendarWords = new(StringComparer.OrdinalIgnoreCase)
     {
