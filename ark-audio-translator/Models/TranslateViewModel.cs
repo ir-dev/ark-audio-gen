@@ -26,4 +26,9 @@ public class TranslateViewModel
     public string Engine { get; set; } = "";
 
     public IReadOnlyList<Language> Languages { get; set; } = Models.Languages.All;
+
+    // --- API console (signed-in user's credentials) ---
+    public string ApiBaseUrl { get; set; } = "";
+    public string ApiKeyName { get; set; } = "X-Ark-Api-Key";
+    public string ApiKey { get; set; } = "";
 }

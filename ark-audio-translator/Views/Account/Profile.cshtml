@@ -1,0 +1,67 @@
+@model ArkTextTranslator.Models.ProfileViewModel
+@{
+    ViewData["Title"] = "API & Profile";
+}
+
+<div class="row">
+    <div class="col-lg-9 mx-auto">
+        <h1 class="h3 mb-1 mt-3">API &amp; Profile</h1>
+        <p class="text-muted">Signed in as <strong>@Model.Email</strong></p>
+
+        @if (!string.IsNullOrEmpty(Model.StatusMessage))
+        {
+            <div class="alert alert-success">@Model.StatusMessage</div>
+        }
+
+        <div class="card mb-4">
+            <div class="card-header">Your API credentials</div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Send your key on every API request using the header below. Keep it secret —
+                    anyone with this key can translate as you.
+                </p>
+
+                <form asp-action="UpdateHeaderName" method="post" class="row g-2 align-items-end mb-3">
+                    <div class="col-sm-6">
+                        <label asp-for="ApiKeyName" class="form-label"></label>
+                        <input asp-for="ApiKeyName" class="form-control" />
+                        <span asp-validation-for="ApiKeyName" class="text-danger"></span>
+                    </div>
+                    <div class="col-sm-3">
+                        <button type="submit" class="btn btn-ghost w-100">Save name</button>
+                    </div>
+                </form>
+
+                <label class="form-label">API key</label>
+                <div class="code-block" id="apiKeyBlock">@Model.ApiKey<button class="copy-btn" type="button" onclick="copyFrom('apiKeyBlock', this)">Copy</button></div>
+
+                <form asp-action="RegenerateKey" method="post" class="mt-3"
+                      onsubmit="return confirm('Regenerate your API key? The current key will stop working immediately.');">
+                    <button type="submit" class="btn btn-ghost">↻ Regenerate key</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">Example request</div>
+            <div class="card-body">
+                <div class="code-block" id="sampleCurl">curl -X POST @Model.ApiBaseUrl/api/translate \
+  -H "Content-Type: application/json" \
+  -H "@Model.ApiKeyName: @Model.ApiKey" \
+  -d '{"text":"Bonjour le monde","source":"auto","target":"eng_Latn"}'<button class="copy-btn" type="button" onclick="copyFrom('sampleCurl', this)">Copy</button></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">Account</div>
+            <div class="card-body text-muted">
+                <div>Created: @Model.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC</div>
+                <div>Last sign-in: @(Model.LastLoginAtUtc?.ToString("yyyy-MM-dd HH:mm") ?? "—") UTC</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

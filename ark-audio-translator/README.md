@@ -1,8 +1,35 @@
-# ArkTextTranslator
+# ArkTextTranslator (Ark Translate)
 
-An ASP.NET Core MVC web app that takes text in **any language**, **detects the
+An ASP.NET Core MVC **SaaS** web app that takes text in **any language**, **detects the
 language**, and **translates it** to a target language — running entirely on the
-**CPU**, with no cloud API required.
+**CPU**, with no cloud API required. Registered users get a personal REST API key and a
+built-in API console.
+
+## SaaS features
+
+- **Passwordless accounts** — sign in with an email **one-time code** + **CAPTCHA**.
+  If SMTP isn't configured (`Smtp:Host` empty), the OTP is shown **on screen** so the
+  app works out of the box; configure SMTP to email it instead.
+- **Gated services** — the translator UI and `/api/translate` require a signed-in user
+  / valid API key.
+- **Personal API keys** — each user gets a unique `ark_…` key sent in a **custom HTTP
+  header name they choose** (default `X-Ark-Api-Key`), managed/regenerated on the
+  profile page.
+- **Built-in API console** — the translator generates a ready-to-run `curl` for
+  whatever you type, pre-filled with your key.
+- **Dark / light theme** — dark by default, toggle in the navbar (persisted in
+  `localStorage`).
+- **Storage** — EF Core + **SQLite** (`App_Data/ark-translator.db`, auto-created).
+
+## Auth flow
+
+```
+/Account/Login  (email + CAPTCHA)
+   └─▶ OTP issued ─▶ emailed (SMTP) OR shown on screen (no SMTP)
+/Account/Verify (6-digit code)
+   └─▶ cookie sign-in ─▶ user auto-registered on first success
+/Account/Profile  ── view / rename header / regenerate API key
+```
 
 ## How it works
 
@@ -44,17 +71,21 @@ the model (~890 MB), so it takes a while; subsequent runs use the cached files.*
 
 ## Endpoints
 
-| Method | Route             | Purpose                                     |
-|--------|-------------------|---------------------------------------------|
-| GET    | `/`               | Translate UI (Translation/Index)            |
-| POST   | `/Translation`    | Form submit, renders the translation        |
-| POST   | `/api/translate`  | JSON API                                     |
+| Method | Route                | Auth        | Purpose                                  |
+|--------|----------------------|-------------|------------------------------------------|
+| GET    | `/`                  | anonymous   | Landing page                             |
+| GET    | `/Account/Login`     | anonymous   | Email + CAPTCHA sign-in                  |
+| GET    | `/Translation`       | cookie      | Translate UI + API console               |
+| POST   | `/Translation`       | cookie      | Form submit, renders the translation     |
+| GET    | `/Account/Profile`   | cookie      | API key management                       |
+| POST   | `/api/translate`     | **API key** | JSON API                                 |
 
-Example API call:
+Example API call (key sent in your configured header):
 
 ```bash
 curl -X POST http://localhost:5234/api/translate \
   -H "Content-Type: application/json" \
+  -H "X-Ark-Api-Key: ark_your_personal_key" \
   -d '{"text":"Bonjour le monde","source":"auto","target":"eng_Latn"}'
 ```
 

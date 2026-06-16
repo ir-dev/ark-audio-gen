@@ -1,0 +1,54 @@
+@model ArkTextTranslator.Models.VerifyOtpViewModel
+@{
+    ViewData["Title"] = "Enter your code";
+}
+
+<div class="row">
+    <div class="col-lg-5 col-md-7 mx-auto">
+        <div class="card card-body p-4 mt-4">
+            <h1 class="h3 mb-1">Enter your code</h1>
+
+            @if (!string.IsNullOrEmpty(Model.InfoMessage))
+            {
+                <div class="alert @(Model.OnScreenOtp is null ? "alert-info" : "alert-warning")">@Model.InfoMessage</div>
+            }
+
+            @if (!string.IsNullOrEmpty(Model.OnScreenOtp))
+            {
+                <div class="text-center mb-3">
+                    <div class="text-muted small text-uppercase">Your one-time code</div>
+                    <div class="otp-display">@Model.OnScreenOtp</div>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger">@Model.ErrorMessage</div>
+            }
+
+            <form asp-action="Verify" method="post">
+                <input type="hidden" asp-for="Email" />
+                <input type="hidden" asp-for="ReturnUrl" />
+                <input type="hidden" asp-for="OnScreenOtp" />
+
+                <div class="mb-3">
+                    <label asp-for="Code" class="form-label"></label>
+                    <input asp-for="Code" class="form-control form-control-lg text-center" inputmode="numeric"
+                           maxlength="6" autocomplete="one-time-code" placeholder="000000" autofocus
+                           style="letter-spacing:.5rem;font-weight:700;" />
+                    <span asp-validation-for="Code" class="text-danger"></span>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">Verify &amp; continue</button>
+            </form>
+
+            <div class="text-center mt-3">
+                <a asp-action="Login" class="small text-muted">Use a different email / resend</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

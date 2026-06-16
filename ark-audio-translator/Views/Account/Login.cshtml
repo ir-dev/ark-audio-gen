@@ -1,0 +1,48 @@
+@model ArkTextTranslator.Models.LoginViewModel
+@{
+    ViewData["Title"] = "Sign in";
+}
+
+<div class="row">
+    <div class="col-lg-5 col-md-7 offset-lg-auto mx-auto">
+        <div class="card card-body p-4 mt-4">
+            <h1 class="h3 mb-1">Sign in or sign up</h1>
+            <p class="text-muted">We'll email you a one-time code — no password needed.</p>
+
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger">@Model.ErrorMessage</div>
+            }
+
+            <form asp-action="Login" method="post">
+                <input type="hidden" asp-for="ReturnUrl" />
+
+                <div class="mb-3">
+                    <label asp-for="Email" class="form-label"></label>
+                    <input asp-for="Email" class="form-control" type="email" autocomplete="email" placeholder="you@example.com" autofocus />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Captcha" class="form-label"></label>
+                    <div class="captcha-box mb-2">
+                        <img id="captchaImg" src="@Url.Action("Captcha")" width="180" height="60" alt="CAPTCHA" />
+                        <button type="button" class="btn btn-ghost btn-sm"
+                                onclick="document.getElementById('captchaImg').src='@Url.Action("Captcha")?t='+Date.now()">↻ New</button>
+                    </div>
+                    <input asp-for="Captcha" class="form-control" autocomplete="off" placeholder="Type the characters above" />
+                    <span asp-validation-for="Captcha" class="text-danger"></span>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">Send my code</button>
+            </form>
+        </div>
+        <p class="text-muted text-center mt-3 small">
+            By continuing you agree to use this service responsibly.
+        </p>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

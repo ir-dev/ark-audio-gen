@@ -1,25 +1,37 @@
+using System.Security.Claims;
+using ArkTextTranslator.Data;
 using ArkTextTranslator.Models;
 using ArkTextTranslator.Services;
+using ArkTextTranslator.Services.Auth;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace ArkTextTranslator.Controllers;
 
+[Authorize]
 public class TranslationController : Controller
 {
     private const int MaxInputChars = 20_000;
 
     private readonly ITranslationService _translator;
+    private readonly AppDbContext _db;
     private readonly ILogger<TranslationController> _logger;
 
-    public TranslationController(ITranslationService translator, ILogger<TranslationController> logger)
+    public TranslationController(ITranslationService translator, AppDbContext db, ILogger<TranslationController> logger)
     {
         _translator = translator;
+        _db = db;
         _logger = logger;
     }
 
     [HttpGet]
-    public IActionResult Index() =>
-        View(new TranslateViewModel { Engine = _translator.EngineName });
+    public async Task<IActionResult> Index(CancellationToken cancellationToken)
+    {
+        var model = new TranslateViewModel { Engine = _translator.EngineName };
+        await PopulateApiConsoleAsync(model, cancellationToken);
+        return View(model);
+    }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -27,6 +39,7 @@ public class TranslationController : Controller
     {
         model.Engine = _translator.EngineName;
         model.Languages = Languages.All;
+        await PopulateApiConsoleAsync(model, cancellationToken);
 
         if (string.IsNullOrWhiteSpace(model.Text))
         {
@@ -59,9 +72,11 @@ public class TranslationController : Controller
     }
 
     /// <summary>
-    /// JSON API: POST { text, source?, target } (form or JSON). Returns the translation.
+    /// JSON API: POST { text, source?, target }. Authenticated by the caller's API key
+    /// sent in their configured custom header (see the profile page).
     /// </summary>
     [HttpPost("api/translate")]
+    [Authorize(AuthenticationSchemes = ApiKeyAuthenticationOptions.Scheme)]
     public async Task<IActionResult> Api([FromBody] TranslateRequest request, CancellationToken cancellationToken)
     {
         if (request is null || string.IsNullOrWhiteSpace(request.Text))
@@ -91,6 +106,18 @@ public class TranslationController : Controller
         {
             _logger.LogError(ex, "API translation failed");
             return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+    private async Task PopulateApiConsoleAsync(TranslateViewModel model, CancellationToken cancellationToken)
+    {
+        model.ApiBaseUrl = $"{Request.Scheme}://{Request.Host}";
+        var email = User.FindFirstValue(ClaimTypes.Email);
+        var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+        if (user is not null)
+        {
+            model.ApiKeyName = user.ApiKeyName;
+            model.ApiKey = user.ApiKey;
         }
     }
 

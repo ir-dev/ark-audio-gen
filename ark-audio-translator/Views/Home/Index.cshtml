@@ -1,8 +1,167 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@{
+    ViewData["Title"] = "Detect & Translate Any Language on CPU";
+    var signedIn = User.Identity?.IsAuthenticated == true;
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<section class="hero">
+    <div class="hero-glow"></div>
+    <span class="chip mb-3">⚡ CPU-hosted · offline · developer-first</span>
+    <h1>Detect &amp; translate <span class="gradient-text">any language</span><br />with a clean developer API</h1>
+    <p class="lead">
+        Ark Translate auto-detects the language of any text and translates it between
+        200+ languages — running entirely on the CPU with Meta's NLLB-200 model. No GPU,
+        no third-party cloud, no data leaving your server.
+    </p>
+    <div class="d-flex gap-2 justify-content-center flex-wrap">
+        @if (signedIn)
+        {
+            <a class="btn btn-primary btn-lg" asp-controller="Translation" asp-action="Index">Open the translator →</a>
+            <a class="btn btn-ghost btn-lg" asp-controller="Account" asp-action="Profile">Get your API key</a>
+        }
+        else
+        {
+            <a class="btn btn-primary btn-lg" asp-controller="Account" asp-action="Login">Get started — it's free</a>
+            <a class="btn btn-ghost btn-lg" href="#api">View the API</a>
+        }
+    </div>
+</section>
+
+<section class="section" id="features">
+    <div class="text-center mb-5">
+        <h2>Why Ark Translate</h2>
+        <p class="text-muted">Built for privacy, speed, and developer ergonomics.</p>
+    </div>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="icon">🔍</div>
+                <h5>Automatic language detection</h5>
+                <p class="text-muted mb-0">
+                    Offline n-gram detection identifies the source language instantly — no need
+                    to tell us what you're sending. Covers ~280 languages.
+                </p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="icon">🧠</div>
+                <h5>NLLB-200 on the CPU</h5>
+                <p class="text-muted mb-0">
+                    Meta's No Language Left Behind model runs locally through ONNX Runtime with
+                    int8 quantization — responsive translations without a GPU or an API bill.
+                </p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="icon">🔒</div>
+                <h5>Your data stays put</h5>
+                <p class="text-muted mb-0">
+                    Detection and translation both happen on your server. Nothing is sent to a
+                    third-party translation cloud.
+                </p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="icon">🔑</div>
+                <h5>Personal API keys</h5>
+                <p class="text-muted mb-0">
+                    Every account gets a unique key sent in a header name <em>you</em> choose.
+                    Regenerate it anytime from your profile.
+                </p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="icon">🛠️</div>
+                <h5>Built-in API console</h5>
+                <p class="text-muted mb-0">
+                    The translator generates a ready-to-run <code>curl</code> for whatever you
+                    type, so wiring up your integration takes seconds.
+                </p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="icon">✉️</div>
+                <h5>Passwordless sign-in</h5>
+                <p class="text-muted mb-0">
+                    Log in with an email one-time code and a CAPTCHA. No passwords to leak or
+                    reset.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section" id="how">
+    <div class="text-center mb-5">
+        <h2>How it works</h2>
+        <p class="text-muted">From sign-up to your first translation in under a minute.</p>
+    </div>
+    <div class="row g-4 align-items-stretch">
+        <div class="col-md-4">
+            <div class="card feature-card d-flex flex-row gap-3 align-items-start">
+                <div class="step-num">1</div>
+                <div>
+                    <h6 class="mb-1">Sign up with email</h6>
+                    <p class="text-muted mb-0">Enter your email, solve a quick CAPTCHA, and confirm the one-time code.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card d-flex flex-row gap-3 align-items-start">
+                <div class="step-num">2</div>
+                <div>
+                    <h6 class="mb-1">Grab your API key</h6>
+                    <p class="text-muted mb-0">A unique key is waiting on your profile, with a header name you can customize.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card d-flex flex-row gap-3 align-items-start">
+                <div class="step-num">3</div>
+                <div>
+                    <h6 class="mb-1">Translate — UI or API</h6>
+                    <p class="text-muted mb-0">Use the web translator or POST to <code>/api/translate</code> from your app.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section" id="api">
+    <div class="row align-items-center g-4">
+        <div class="col-lg-5">
+            <h2>A REST API developers enjoy</h2>
+            <p class="text-muted">
+                One endpoint, JSON in and out, authenticated by your personal key. Detection is
+                automatic when you pass <code>"auto"</code> as the source.
+            </p>
+            <ul class="text-muted">
+                <li>FLORES-200 language codes (<code>eng_Latn</code>, <code>fra_Latn</code>, <code>hin_Deva</code>, …)</li>
+                <li>Detected language + timing returned with every response</li>
+                <li>Live <code>curl</code> generator inside the translator</li>
+            </ul>
+            <a class="btn btn-primary" asp-controller="Account" asp-action="@(signedIn ? "Profile" : "Login")">
+                @(signedIn ? "View my API key" : "Create an account")
+            </a>
+        </div>
+        <div class="col-lg-7">
+            <div class="code-block">curl -X POST https://ark-translate.immanuel.co/api/translate \
+  -H "Content-Type: application/json" \
+  -H "X-Ark-Api-Key: ark_your_personal_key" \
+  -d '{"text":"Bonjour le monde","source":"auto","target":"eng_Latn"}'
+
+# → {
+#     "translatedText": "Hello world",
+#     "detectedLanguage": "French",
+#     "sourceLanguage": "fra_Latn",
+#     "targetLanguage": "eng_Latn",
+#     "engine": "NLLB-200 (ONNX, int8)",
+#     "processingSeconds": 0.28
+#   }</div>
+        </div>
+    </div>
+</section>
