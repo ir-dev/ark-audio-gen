@@ -1,0 +1,82 @@
+@model ArkTextTranslator.Models.TranslateViewModel
+@{
+    ViewData["Title"] = "Translate";
+}
+
+<div class="row">
+    <div class="col-lg-10 offset-lg-1">
+        <h1 class="mb-1">🌐 Translate</h1>
+        <p class="text-muted">
+            Type or paste text in <strong>any language</strong>. The language is detected
+            automatically (offline, on CPU) and the text is translated to your target
+            language. Engine: <code>@Model.Engine</code>.
+        </p>
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger">@Model.ErrorMessage</div>
+        }
+
+        <form asp-action="Index" method="post" class="card card-body mb-4">
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label asp-for="SourceLanguage" class="form-label"></label>
+                    <select asp-for="SourceLanguage" class="form-select">
+                        <option value="auto">🔍 Auto-detect</option>
+                        @foreach (var lang in Model.Languages)
+                        {
+                            <option value="@lang.Flores">@lang.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="TargetLanguage" class="form-label"></label>
+                    <select asp-for="TargetLanguage" class="form-select">
+                        @foreach (var lang in Model.Languages)
+                        {
+                            <option value="@lang.Flores">@lang.Name</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Text" class="form-label"></label>
+                <textarea asp-for="Text" class="form-control" rows="6"
+                          placeholder="Enter text in any language…" required></textarea>
+                <span asp-validation-for="Text" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Translate</button>
+        </form>
+
+        @if (Model.Result is not null)
+        {
+            var result = Model.Result;
+            <div class="card">
+                <div class="card-header d-flex justify-content-between flex-wrap">
+                    <span>Translation</span>
+                    <small class="text-muted">
+                        detected: <strong>@result.DetectedLanguage</strong> ·
+                        @result.SourceLanguage → @result.TargetLanguage ·
+                        @result.ProcessingTime.TotalSeconds.ToString("0.00")s
+                    </small>
+                </div>
+                <div class="card-body">
+                    @if (string.IsNullOrWhiteSpace(result.TranslatedText))
+                    {
+                        <p class="text-muted mb-0"><em>(no output)</em></p>
+                    }
+                    else
+                    {
+                        <p style="white-space: pre-wrap;" class="mb-0">@result.TranslatedText</p>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

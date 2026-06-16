@@ -1,0 +1,12 @@
+# .NET build output
+bin/
+obj/
+
+# Downloaded NLLB model + tokenizer (large binaries, fetched on first run)
+App_Data/
+*.onnx
+*.bin
+*.model
+
+# User-specific
+*.user
