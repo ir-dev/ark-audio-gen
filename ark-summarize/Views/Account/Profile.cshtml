@@ -47,12 +47,14 @@
             <div class="card-body">
                 <p class="text-muted">
                     The summarize endpoint accepts a JSON body. Send your text in the
-                    <code>text</code> field and (optionally) <code>maxSentences</code>.
+                    <code>text</code> field, plus optional <code>maxSentences</code> and
+                    <code>model</code> (defaults to <code>lexical</code>; list engines with
+                    <code>GET /api/models</code>).
                 </p>
                 <div class="code-block" id="sampleCurl">curl -X POST @Model.ApiBaseUrl/api/summarize \
   -H "@Model.ApiKeyName: @Model.ApiKey" \
   -H "Content-Type: application/json" \
-  -d '{"text":"Your text goes here.","maxSentences":3}'<button class="copy-btn" type="button" onclick="copyFrom('sampleCurl', this)">Copy</button></div>
+  -d '{"text":"Your text goes here.","maxSentences":3,"model":"lexical"}'<button class="copy-btn" type="button" onclick="copyFrom('sampleCurl', this)">Copy</button></div>
             </div>
         </div>
 

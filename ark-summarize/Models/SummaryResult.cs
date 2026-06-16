@@ -14,6 +14,10 @@ public record Entity(
 /// </summary>
 public class SummaryResult
 {
+    /// <summary>Name of the engine that produced this result.</summary>
+    [JsonPropertyName("engine")]
+    public string Engine { get; set; } = "";
+
     /// <summary>The inferred high-level intent of the text (e.g. "question", "request").</summary>
     [JsonPropertyName("intent")]
     public string Intent { get; set; } = "statement";

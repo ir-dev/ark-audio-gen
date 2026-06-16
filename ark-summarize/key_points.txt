@@ -1,0 +1,8 @@
+
+dotnet publish -c Release -r win-x64 --self-contained true -o ./publish
+
+hosted this on ark-summarize.immanuel.co
+
+summarize the input text
+
+

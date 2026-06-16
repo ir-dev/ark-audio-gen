@@ -52,7 +52,11 @@ function refreshCurl() {
     if (isNaN(max) || max < 1) max = 3;
     if (max > 10) max = 10;
 
-    const body = JSON.stringify({ text: text, maxSentences: max });
+    // Use the first ticked engine for the API model field (the API runs one model per call).
+    const checked = document.querySelector('input[name="SelectedEngines"]:checked');
+    const model = checked ? checked.value : (cfg.model || "lexical");
+
+    const body = JSON.stringify({ text: text, maxSentences: max, model: model });
     // Escape single quotes for the shell-single-quoted -d argument.
     const safeBody = body.replace(/'/g, "'\\''");
 
@@ -70,6 +74,8 @@ document.addEventListener("DOMContentLoaded", function () {
             const el = document.getElementById(id);
             if (el) el.addEventListener("input", refreshCurl);
         });
+        document.querySelectorAll('input[name="SelectedEngines"]').forEach((el) =>
+            el.addEventListener("change", refreshCurl));
         refreshCurl();
     }
 });

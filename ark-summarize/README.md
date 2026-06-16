@@ -39,12 +39,21 @@ download, and no third-party AI provider**. Your text never leaves the server.
 - **Dark / light theme** — dark by default, toggle persisted in `localStorage`.
 - **SQLite** persistence (created automatically on first run).
 
-## Engine
+## Engines
 
-The analysis engine (`Services/SummarizationService.cs`) is fully managed C# with zero
-native dependencies, so it builds and runs anywhere .NET runs and responds in
-milliseconds. The `ISummarizationService` abstraction makes it easy to swap in an ONNX
-or other model later without touching the controllers or UI.
+Two interchangeable CPU engines implement `ISummarizationService`; pick one or run several
+and **compare them side by side** in the UI. The API selects one per call via the optional
+`model` field (default `lexical`).
+
+| key       | engine                  | summary               | intent                       | notes |
+|-----------|-------------------------|-----------------------|------------------------------|-------|
+| `lexical` | Ark Lexical Engine *(default)* | frequency-based extractive | rule/cue based               | no model, instant, fully offline |
+| `minilm`  | MiniLM Semantic (ONNX)  | embedding centroid    | zero-shot embedding similarity | `all-MiniLM-L6-v2` (int8 ONNX, ~23 MB) downloaded once on first use; ~5–10 ms warm |
+
+Entities and keywords are deterministic and shared across engines (`Services/SharedNlp.cs`).
+The MiniLM model + vocab are pulled from Hugging Face and cached under `App_Data/models/`;
+everything then runs locally on the CPU — no GPU, no cloud. Add more engines by implementing
+`ISummarizationService` and registering it — the UI and API pick them up automatically.
 
 ## Running locally
 
@@ -69,12 +78,18 @@ settings.
 curl -X POST http://localhost:5244/api/summarize \
   -H "X-Ark-Api-Key: ark_your_personal_key" \
   -H "Content-Type: application/json" \
-  -d '{"text":"Acme Corp reported that revenue grew 24% to $5M in 2025.","maxSentences":2}'
+  -d '{"text":"Acme Corp reported that revenue grew 24% to $5M in 2025.","maxSentences":2,"model":"minilm"}'
+
+# List available engines:
+curl http://localhost:5244/api/models -H "X-Ark-Api-Key: ark_your_personal_key"
 ```
 
 - The header **name** (`X-Ark-Api-Key` by default) is configurable per user on the
   profile page; the **value** is your generated key (regenerable any time).
-- Request body: `{ "text": "...", "maxSentences": 3 }` (`maxSentences` optional, 1–10).
+- Request body: `{ "text": "...", "maxSentences": 3, "model": "lexical" }`
+  (`maxSentences` optional 1–10; `model` optional, defaults to `lexical`; unknown
+  models return 400 with the list of valid keys).
+- `GET /api/models` returns the available engine keys.
 - Max input length: 100,000 characters.
 
 ## Project layout

@@ -1,4 +1,5 @@
 using ArkSummarize.Data;
+using ArkSummarize.Models;
 using ArkSummarize.Services;
 using ArkSummarize.Services.Auth;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -48,8 +49,13 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// --- Summarization engine (lightweight, CPU-only, fully managed) ------------
+// --- Summarization engines (CPU-only) ---------------------------------------
+// Default engine: fully-managed lexical analyser (no model, instant).
 builder.Services.AddSingleton<ISummarizationService, SummarizationService>();
+// Optional engine: MiniLM sentence embeddings via ONNX (model downloaded on first use).
+builder.Services.Configure<EmbeddingOptions>(builder.Configuration.GetSection(EmbeddingOptions.SectionName));
+builder.Services.AddSingleton<ISummarizationService, MiniLmSummarizationService>();
+builder.Services.AddSingleton<SummarizationEngineProvider>();
 
 var app = builder.Build();
 
