@@ -1,0 +1,6 @@
+
+dotnet publish -c Release -r win-x64 --self-contained true -o ./publish
+
+hosted this on ark-stt.immanuel.co
+
+stt - speech to text

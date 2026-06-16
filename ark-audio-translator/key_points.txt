@@ -1,0 +1,10 @@
+
+dotnet publish -c Release -r win-x64 --self-contained true -o ./publish
+
+host this on ark-translate.immanuel.co
+
+translate - detect language + translate text (any -> any)
+
+engine: offline CPU NLLB-200 via ONNX Runtime (default), or LibreTranslate over HTTP
+detection: NTextCat (offline, n-gram), profile in LanguageModels/Core14.profile.xml
+
