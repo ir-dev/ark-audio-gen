@@ -1,0 +1,92 @@
+# Ark Summarize
+
+A CPU-hosted, privacy-first **text intelligence** SaaS built with ASP.NET Core MVC.
+Paste any text and get back clean JSON: the inferred **intent**, a concise extractive
+**summary**, and the **entities** mentioned in the text.
+
+Everything runs on the CPU with a fully self-contained engine — **no GPU, no model
+download, and no third-party AI provider**. Your text never leaves the server.
+
+```json
+{
+  "intent": "complaint",
+  "intentConfidence": 0.82,
+  "summary": "The payment gateway has been down since Monday and customers cannot check out.",
+  "entities": [
+    { "text": "Acme Corp", "type": "organization" },
+    { "text": "support@acme.com", "type": "email" },
+    { "text": "Monday", "type": "date" }
+  ],
+  "keywords": ["payment", "gateway", "checkout"]
+}
+```
+
+## Features
+
+- **Intent detection** — cue-based classifier (question, request, complaint, praise,
+  transactional, instruction, opinion, announcement, statement).
+- **Extractive summary** — term-frequency sentence ranking with a positional prior;
+  faithful to the source (no hallucinations). Length controlled by `maxSentences` (1–10).
+- **Entity extraction** — names, organizations, locations, emails, URLs, money, dates,
+  times, phone numbers and percentages.
+- **SaaS auth** — passwordless email one-time-passcode (OTP) sign-in with CAPTCHA.
+  When SMTP isn't configured, the OTP is shown **on screen** so the app is usable
+  out of the box.
+- **Developer API** — `POST /api/summarize`, authenticated by a personal API key sent
+  in a **custom HTTP header name you choose** on your profile page.
+- **Live API console** — the summarizer page generates the exact `curl` command for the
+  text and settings you entered.
+- **Dark / light theme** — dark by default, toggle persisted in `localStorage`.
+- **SQLite** persistence (created automatically on first run).
+
+## Engine
+
+The analysis engine (`Services/SummarizationService.cs`) is fully managed C# with zero
+native dependencies, so it builds and runs anywhere .NET runs and responds in
+milliseconds. The `ISummarizationService` abstraction makes it easy to swap in an ONNX
+or other model later without touching the controllers or UI.
+
+## Running locally
+
+```bash
+cd ark-summarize
+dotnet run
+```
+
+Then open the printed URL (e.g. `http://localhost:5244`). On first run the SQLite
+database is created under `App_Data/`.
+
+### Sign-in without email
+
+If the `Smtp` section in `appsettings.json` has an empty `Host` (the default), the app
+runs in **no-email mode**: after you submit your email + CAPTCHA, the one-time code is
+displayed directly on the verification screen. To send real emails, fill in the SMTP
+settings.
+
+## API
+
+```bash
+curl -X POST http://localhost:5244/api/summarize \
+  -H "X-Ark-Api-Key: ark_your_personal_key" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Acme Corp reported that revenue grew 24% to $5M in 2025.","maxSentences":2}'
+```
+
+- The header **name** (`X-Ark-Api-Key` by default) is configurable per user on the
+  profile page; the **value** is your generated key (regenerable any time).
+- Request body: `{ "text": "...", "maxSentences": 3 }` (`maxSentences` optional, 1–10).
+- Max input length: 100,000 characters.
+
+## Project layout
+
+```
+Controllers/   Home, Account (OTP auth + profile), Summarize (UI + /api/summarize)
+Services/      ISummarizationService + SummarizationService (the CPU engine)
+Services/Auth/ OTP, CAPTCHA, SMTP email, API-key generation & auth handler
+Data/          EF Core DbContext (SQLite)
+Models/        Domain + view models
+Views/         Razor views (landing, account, summarizer) + dark/light theme
+wwwroot/       Static assets (site.css, site.js, bootstrap/jquery)
+```
+
+Built by [Immanuel R](https://immanuel.co).

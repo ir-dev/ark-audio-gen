@@ -1,0 +1,9 @@
+# .NET build output
+bin/
+obj/
+
+# SQLite database (created on first run)
+App_Data/
+
+# User-specific
+*.user

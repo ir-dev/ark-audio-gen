@@ -1,0 +1,128 @@
+@model ArkSummarize.Models.SummarizeViewModel
+@{
+    ViewData["Title"] = "Summarize";
+}
+
+<div class="row">
+    <div class="col-lg-10 offset-lg-1">
+        <h1 class="mb-1">🧠 Text&nbsp;→&nbsp;Intent · Summary · Entities</h1>
+        <p class="text-muted">
+            CPU-hosted, lightweight text analysis. Paste any text below and get structured JSON
+            back — instantly, with nothing leaving this server.
+        </p>
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger">@Model.ErrorMessage</div>
+        }
+
+        <form asp-action="Index" method="post" class="card card-body mb-4">
+            <div class="mb-3">
+                <label asp-for="Text" class="form-label"></label>
+                <textarea asp-for="Text" id="Text" class="form-control" rows="9"
+                          placeholder="Paste an email, article, review, support ticket — any text you want analysed…"></textarea>
+            </div>
+            <div class="row g-3 align-items-end">
+                <div class="col-sm-4">
+                    <label asp-for="MaxSentences" class="form-label"></label>
+                    <input asp-for="MaxSentences" id="MaxSentences" type="number" min="1" max="10" class="form-control" />
+                </div>
+                <div class="col-sm-8 text-sm-end">
+                    <button type="submit" class="btn btn-primary px-4">Summarize</button>
+                </div>
+            </div>
+        </form>
+
+        @if (Model.Result is not null)
+        {
+            var r = Model.Result;
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between flex-wrap">
+                    <span>Result</span>
+                    <small class="text-muted">
+                        @r.WordCount words · @r.SentenceCount sentences · analysed in @r.ProcessingMs.ToString("0.0")ms
+                    </small>
+                </div>
+                <div class="card-body">
+                    <div class="result-grid">
+                        <div class="result-label">Intent</div>
+                        <div>
+                            <span class="tag tag-intent">@r.Intent</span>
+                            <span class="text-muted small ms-2">confidence @((r.IntentConfidence * 100).ToString("0"))%</span>
+                        </div>
+
+                        <div class="result-label">Summary</div>
+                        <div>
+                            @if (string.IsNullOrWhiteSpace(r.Summary))
+                            {
+                                <span class="text-muted"><em>(no summary produced)</em></span>
+                            }
+                            else
+                            {
+                                <p class="mb-0" style="white-space:pre-wrap;">@r.Summary</p>
+                            }
+                        </div>
+
+                        <div class="result-label">Entities</div>
+                        <div>
+                            @if (r.Entities.Count == 0)
+                            {
+                                <span class="text-muted"><em>(none detected)</em></span>
+                            }
+                            else
+                            {
+                                @foreach (var e in r.Entities)
+                                {
+                                    <span class="entity-pill"><span class="entity-type">@e.Type</span>@e.Text</span>
+                                }
+                            }
+                        </div>
+
+                        <div class="result-label">Keywords</div>
+                        <div>
+                            @if (r.Keywords.Count == 0)
+                            {
+                                <span class="text-muted"><em>—</em></span>
+                            }
+                            else
+                            {
+                                @foreach (var k in r.Keywords)
+                                {
+                                    <span class="chip me-1 mb-1">@k</span>
+                                }
+                            }
+                        </div>
+                    </div>
+
+                    <details class="mt-4">
+                        <summary>Raw JSON response</summary>
+                        <div class="code-block mt-2" id="jsonResult">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(r, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }))<button class="copy-btn" type="button" onclick="copyFrom('jsonResult', this)">Copy</button></div>
+                    </details>
+                </div>
+            </div>
+        }
+
+        <div class="card mt-4" id="apiConsole">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>🛠️ API console</span>
+                <span class="chip">live <code class="ms-1">/api/summarize</code></span>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    This is the exact request for the text and settings above — copy it straight
+                    into your terminal or app. Your personal API key is already filled in.
+                </p>
+                <div class="code-block">
+                    <button class="copy-btn" type="button" onclick="copyFrom('curlConsole', this)">Copy</button><span id="curlConsole" data-endpoint="@Model.ApiBaseUrl" data-keyname="@Model.ApiKeyName" data-keyvalue="@Model.ApiKey">curl ...</span></div>
+                <p class="text-muted small mt-2 mb-0">
+                    Manage or regenerate this key on your
+                    <a asp-controller="Account" asp-action="Profile">profile</a>.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

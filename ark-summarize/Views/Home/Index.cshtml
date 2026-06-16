@@ -1,0 +1,231 @@
+@{
+    ViewData["Title"] = "Text Intelligence on CPU";
+    var signedIn = User.Identity?.IsAuthenticated == true;
+}
+
+<section class="hero">
+    <div class="hero-glow"></div>
+    <span class="chip mb-3">⚡ CPU-hosted · offline · developer-first</span>
+    <h1>Turn any text into <span class="gradient-text">structured intelligence</span><br />intent · summary · entities</h1>
+    <p class="lead">
+        Ark Summarize reads a block of text and returns clean JSON — the <strong>intent</strong>
+        behind it, a concise extractive <strong>summary</strong>, and the <strong>entities</strong>
+        it mentions. It runs entirely on the CPU with no GPU, no model download and no third-party
+        AI provider, so responses come back in milliseconds and your text never leaves the server.
+    </p>
+    <div class="d-flex gap-2 justify-content-center flex-wrap">
+        @if (signedIn)
+        {
+            <a class="btn btn-primary btn-lg" asp-controller="Summarize" asp-action="Index">Open the summarizer →</a>
+            <a class="btn btn-ghost btn-lg" asp-controller="Account" asp-action="Profile">Get your API key</a>
+        }
+        else
+        {
+            <a class="btn btn-primary btn-lg" asp-controller="Account" asp-action="Login">Get started — it's free</a>
+            <a class="btn btn-ghost btn-lg" href="#api">View the API</a>
+        }
+    </div>
+
+    <div class="row justify-content-center mt-5 g-3">
+        <div class="col-6 col-md-3"><div class="stat"><div class="stat-num">3</div><div class="stat-label">JSON fields out</div></div></div>
+        <div class="col-6 col-md-3"><div class="stat"><div class="stat-num">0</div><div class="stat-label">GPUs required</div></div></div>
+        <div class="col-6 col-md-3"><div class="stat"><div class="stat-num">&lt;50ms</div><div class="stat-label">typical latency</div></div></div>
+        <div class="col-6 col-md-3"><div class="stat"><div class="stat-num">100%</div><div class="stat-label">on-prem &amp; offline</div></div></div>
+    </div>
+</section>
+
+<section class="section" id="output">
+    <div class="row align-items-center g-4">
+        <div class="col-lg-6">
+            <h2>One input, three signals</h2>
+            <p class="text-muted">
+                Most summarizers give you a blob of text. Ark Summarize gives you a structured,
+                machine-readable object you can route, store and act on directly.
+            </p>
+            <ul class="feature-list">
+                <li><span class="tag tag-intent">intent</span> The high-level purpose of the text — is it a question, a complaint, a request, praise, a transaction, an instruction?</li>
+                <li><span class="tag tag-summary">summary</span> A concise extractive summary built from the most informative sentences, length you control.</li>
+                <li><span class="tag tag-entity">entities</span> People, organizations, places, emails, URLs, money, dates, times, phone numbers and percentages.</li>
+            </ul>
+        </div>
+        <div class="col-lg-6">
+            <div class="code-block">{
+  <span class="j-key">"intent"</span>: <span class="j-str">"complaint"</span>,
+  <span class="j-key">"intentConfidence"</span>: <span class="j-num">0.82</span>,
+  <span class="j-key">"summary"</span>: <span class="j-str">"The payment gateway has been down since
+    Monday and customers cannot check out."</span>,
+  <span class="j-key">"entities"</span>: [
+    { <span class="j-key">"text"</span>: <span class="j-str">"Acme Corp"</span>, <span class="j-key">"type"</span>: <span class="j-str">"organization"</span> },
+    { <span class="j-key">"text"</span>: <span class="j-str">"support@acme.com"</span>, <span class="j-key">"type"</span>: <span class="j-str">"email"</span> },
+    { <span class="j-key">"text"</span>: <span class="j-str">"Monday"</span>, <span class="j-key">"type"</span>: <span class="j-str">"date"</span> }
+  ],
+  <span class="j-key">"keywords"</span>: [<span class="j-str">"payment"</span>, <span class="j-str">"gateway"</span>, <span class="j-str">"checkout"</span>]
+}</div>
+        </div>
+    </div>
+</section>
+
+<section class="section" id="features">
+    <div class="text-center mb-5">
+        <h2>Why Ark Summarize</h2>
+        <p class="text-muted">Built for privacy, speed, and developer ergonomics.</p>
+    </div>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="icon">🧠</div>
+                <h5>Intent detection</h5>
+                <p class="text-muted mb-0">
+                    A cue-based classifier weighs structural and lexical signals to label each
+                    text — question, request, complaint, praise, transaction, instruction and more.
+                </p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="icon">✂️</div>
+                <h5>Extractive summary</h5>
+                <p class="text-muted mb-0">
+                    Sentences are ranked by term frequency with a positional prior, so the summary
+                    is faithful to the source — no hallucinations, no made-up facts.
+                </p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="icon">🏷️</div>
+                <h5>Entity extraction</h5>
+                <p class="text-muted mb-0">
+                    Regex extractors and a capitalised-phrase heuristic surface names, orgs,
+                    places, emails, URLs, money, dates, times, phones and percentages.
+                </p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="icon">🔒</div>
+                <h5>Your text stays put</h5>
+                <p class="text-muted mb-0">
+                    Analysis happens on your server with a self-contained engine. Nothing is sent
+                    to OpenAI, Anthropic or any external API — perfect for sensitive data.
+                </p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="icon">⚡</div>
+                <h5>Instant on CPU</h5>
+                <p class="text-muted mb-0">
+                    No GPU, no multi-gigabyte model to download, no cold starts. Typical responses
+                    return in well under a tenth of a second.
+                </p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="icon">🔑</div>
+                <h5>Personal API keys</h5>
+                <p class="text-muted mb-0">
+                    Every account gets a unique key sent in a header name <em>you</em> choose.
+                    Regenerate it anytime from your profile.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section" id="how">
+    <div class="text-center mb-5">
+        <h2>How it works</h2>
+        <p class="text-muted">From sign-up to your first JSON response in under a minute.</p>
+    </div>
+    <div class="row g-4 align-items-stretch">
+        <div class="col-md-4">
+            <div class="card feature-card d-flex flex-row gap-3 align-items-start">
+                <div class="step-num">1</div>
+                <div>
+                    <h6 class="mb-1">Sign up with email</h6>
+                    <p class="text-muted mb-0">Enter your email, solve a quick CAPTCHA, and confirm the one-time code.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card d-flex flex-row gap-3 align-items-start">
+                <div class="step-num">2</div>
+                <div>
+                    <h6 class="mb-1">Grab your API key</h6>
+                    <p class="text-muted mb-0">A unique key is waiting on your profile, with a header name you can customize.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card d-flex flex-row gap-3 align-items-start">
+                <div class="step-num">3</div>
+                <div>
+                    <h6 class="mb-1">Summarize — UI or API</h6>
+                    <p class="text-muted mb-0">Use the web tool or POST your text to <code>/api/summarize</code> from your app.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section" id="usecases">
+    <div class="text-center mb-5">
+        <h2>What developers build with it</h2>
+    </div>
+    <div class="row g-4">
+        <div class="col-md-4"><div class="card feature-card"><h6>📨 Support triage</h6><p class="text-muted mb-0">Auto-route incoming messages by intent and surface the customer, order and contact entities.</p></div></div>
+        <div class="col-md-4"><div class="card feature-card"><h6>📰 Feed digests</h6><p class="text-muted mb-0">Condense articles into a few sentences and tag the people and organizations involved.</p></div></div>
+        <div class="col-md-4"><div class="card feature-card"><h6>🗂️ Document tagging</h6><p class="text-muted mb-0">Index large corpora with keywords and entities for fast, structured search.</p></div></div>
+    </div>
+</section>
+
+<section class="section" id="api">
+    <div class="row align-items-center g-4">
+        <div class="col-lg-5">
+            <h2>A REST API developers enjoy</h2>
+            <p class="text-muted">
+                One endpoint, a JSON body in and structured JSON out, authenticated by your
+                personal key. No SDK required — just <code>curl</code> or any HTTP client.
+            </p>
+            <ul class="text-muted">
+                <li>JSON in, JSON out — <code>intent</code>, <code>summary</code>, <code>entities</code></li>
+                <li>Control summary length with <code>maxSentences</code> (1–10)</li>
+                <li>Authenticated by a header name <em>you</em> choose</li>
+                <li>Live <code>curl</code> generator built into the web tool</li>
+            </ul>
+            <a class="btn btn-primary" asp-controller="Account" asp-action="@(signedIn ? "Profile" : "Login")">
+                @(signedIn ? "View my API key" : "Create an account")
+            </a>
+        </div>
+        <div class="col-lg-7">
+            <div class="code-block">curl -X POST https://ark-summarize.immanuel.co/api/summarize \
+  -H "X-Ark-Api-Key: ark_your_personal_key" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Acme Corp reported that revenue grew 24% to $5M in 2025...","maxSentences":2}'
+
+# → {
+#     "intent": "announcement",
+#     "summary": "Acme Corp reported that revenue grew 24% to $5M in 2025...",
+#     "entities": [
+#       { "text": "Acme Corp", "type": "organization" },
+#       { "text": "24%", "type": "percentage" },
+#       { "text": "$5M", "type": "money" }
+#     ]
+#   }</div>
+        </div>
+    </div>
+</section>
+
+<section class="section text-center">
+    <div class="card card-body p-5">
+        <h2>Ready to add text intelligence to your app?</h2>
+        <p class="text-muted mb-4">Free to start. No credit card. Your data stays on your server.</p>
+        <div>
+            <a class="btn btn-primary btn-lg" asp-controller="Account" asp-action="@(signedIn ? "Profile" : "Login")">
+                @(signedIn ? "Go to my profile" : "Create your free account")
+            </a>
+        </div>
+    </div>
+</section>
