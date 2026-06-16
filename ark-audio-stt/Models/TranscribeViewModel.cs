@@ -15,4 +15,9 @@ public class TranscribeViewModel
     public string? ErrorMessage { get; set; }
 
     public string ModelSize { get; set; } = "base";
+
+    // --- API console (signed-in user's credentials) ---
+    public string ApiBaseUrl { get; set; } = "";
+    public string ApiKeyName { get; set; } = "X-Ark-Api-Key";
+    public string ApiKey { get; set; } = "";
 }

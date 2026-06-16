@@ -1,24 +1,37 @@
+using System.Security.Claims;
+using ArkSpeechToText.Data;
 using ArkSpeechToText.Models;
 using ArkSpeechToText.Services;
+using ArkSpeechToText.Services.Auth;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace ArkSpeechToText.Controllers;
 
+[Authorize]
 public class TranscriptionController : Controller
 {
     private const long MaxUploadBytes = 200L * 1024 * 1024; // 200 MB
 
     private readonly ISpeechToTextService _speechToText;
+    private readonly AppDbContext _db;
     private readonly ILogger<TranscriptionController> _logger;
 
-    public TranscriptionController(ISpeechToTextService speechToText, ILogger<TranscriptionController> logger)
+    public TranscriptionController(ISpeechToTextService speechToText, AppDbContext db, ILogger<TranscriptionController> logger)
     {
         _speechToText = speechToText;
+        _db = db;
         _logger = logger;
     }
 
     [HttpGet]
-    public IActionResult Index() => View(new TranscribeViewModel { ModelSize = _speechToText.ModelSize });
+    public async Task<IActionResult> Index(CancellationToken cancellationToken)
+    {
+        var model = new TranscribeViewModel { ModelSize = _speechToText.ModelSize };
+        await PopulateApiConsoleAsync(model, cancellationToken);
+        return View(model);
+    }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -27,10 +40,11 @@ public class TranscriptionController : Controller
     public async Task<IActionResult> Index(TranscribeViewModel model, CancellationToken cancellationToken)
     {
         model.ModelSize = _speechToText.ModelSize;
+        await PopulateApiConsoleAsync(model, cancellationToken);
 
         if (model.File is null || model.File.Length == 0)
         {
-            model.ErrorMessage = "Please choose a non-empty .wav file.";
+            model.ErrorMessage = "Please choose a non-empty audio file.";
             return View(model);
         }
 
@@ -63,8 +77,13 @@ public class TranscriptionController : Controller
         return View(model);
     }
 
-    /// <summary>JSON API: POST a multipart form with a "file" field. Returns the transcription.</summary>
+    /// <summary>
+    /// JSON API: POST a multipart form with a "file" field (and optional "language").
+    /// Authenticated by the caller's API key sent in their configured custom header
+    /// (see the profile page).
+    /// </summary>
     [HttpPost("api/transcribe")]
+    [Authorize(AuthenticationSchemes = ApiKeyAuthenticationOptions.Scheme)]
     [RequestSizeLimit(MaxUploadBytes)]
     [RequestFormLimits(MultipartBodyLengthLimit = MaxUploadBytes)]
     public async Task<IActionResult> Api(IFormFile? file, [FromForm] string? language, CancellationToken cancellationToken)
@@ -106,6 +125,18 @@ public class TranscriptionController : Controller
         finally
         {
             TryDelete(tempPath);
+        }
+    }
+
+    private async Task PopulateApiConsoleAsync(TranscribeViewModel model, CancellationToken cancellationToken)
+    {
+        model.ApiBaseUrl = $"{Request.Scheme}://{Request.Host}";
+        var email = User.FindFirstValue(ClaimTypes.Email);
+        var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+        if (user is not null)
+        {
+            model.ApiKeyName = user.ApiKeyName;
+            model.ApiKey = user.ApiKey;
         }
     }
 

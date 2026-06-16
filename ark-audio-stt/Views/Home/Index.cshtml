@@ -1,8 +1,169 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@{
+    ViewData["Title"] = "Speech to Text on CPU";
+    var signedIn = User.Identity?.IsAuthenticated == true;
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<section class="hero">
+    <div class="hero-glow"></div>
+    <span class="chip mb-3">⚡ CPU-hosted · offline · developer-first</span>
+    <h1>Turn speech into <span class="gradient-text">accurate text</span><br />with a clean developer API</h1>
+    <p class="lead">
+        Ark Transcribe converts audio to time-stamped text using OpenAI's Whisper model —
+        running entirely on the CPU. Upload WAV, MP3, OGG or Opus, or POST to a single REST
+        endpoint. No GPU, no third-party cloud, no audio leaving your server.
+    </p>
+    <div class="d-flex gap-2 justify-content-center flex-wrap">
+        @if (signedIn)
+        {
+            <a class="btn btn-primary btn-lg" asp-controller="Transcription" asp-action="Index">Open the transcriber →</a>
+            <a class="btn btn-ghost btn-lg" asp-controller="Account" asp-action="Profile">Get your API key</a>
+        }
+        else
+        {
+            <a class="btn btn-primary btn-lg" asp-controller="Account" asp-action="Login">Get started — it's free</a>
+            <a class="btn btn-ghost btn-lg" href="#api">View the API</a>
+        }
+    </div>
+</section>
+
+<section class="section" id="features">
+    <div class="text-center mb-5">
+        <h2>Why Ark Transcribe</h2>
+        <p class="text-muted">Built for privacy, speed, and developer ergonomics.</p>
+    </div>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="icon">🧠</div>
+                <h5>Whisper on the CPU</h5>
+                <p class="text-muted mb-0">
+                    OpenAI's Whisper runs locally through whisper.cpp (ggml) — responsive
+                    transcription without a GPU or a per-minute API bill.
+                </p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="icon">🌍</div>
+                <h5>Automatic language detection</h5>
+                <p class="text-muted mb-0">
+                    Leave the language on auto and Whisper identifies it for you, transcribing
+                    99+ languages out of the box.
+                </p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="icon">🔒</div>
+                <h5>Your audio stays put</h5>
+                <p class="text-muted mb-0">
+                    Decoding and transcription both happen on your server, and uploads are
+                    deleted right after processing. Nothing is sent to a third party.
+                </p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="icon">⏱️</div>
+                <h5>Time-stamped segments</h5>
+                <p class="text-muted mb-0">
+                    Every result includes per-segment start/end times — perfect for subtitles,
+                    captions, and searchable transcripts.
+                </p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="icon">🎧</div>
+                <h5>Many formats, no codecs</h5>
+                <p class="text-muted mb-0">
+                    WAV, MP3, OGG (Vorbis) and Opus are decoded with fully-managed libraries —
+                    cross-platform, no native ffmpeg required.
+                </p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="icon">🔑</div>
+                <h5>Personal API keys</h5>
+                <p class="text-muted mb-0">
+                    Every account gets a unique key sent in a header name <em>you</em> choose.
+                    Regenerate it anytime from your profile.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section" id="how">
+    <div class="text-center mb-5">
+        <h2>How it works</h2>
+        <p class="text-muted">From sign-up to your first transcript in under a minute.</p>
+    </div>
+    <div class="row g-4 align-items-stretch">
+        <div class="col-md-4">
+            <div class="card feature-card d-flex flex-row gap-3 align-items-start">
+                <div class="step-num">1</div>
+                <div>
+                    <h6 class="mb-1">Sign up with email</h6>
+                    <p class="text-muted mb-0">Enter your email, solve a quick CAPTCHA, and confirm the one-time code.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card d-flex flex-row gap-3 align-items-start">
+                <div class="step-num">2</div>
+                <div>
+                    <h6 class="mb-1">Grab your API key</h6>
+                    <p class="text-muted mb-0">A unique key is waiting on your profile, with a header name you can customize.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card d-flex flex-row gap-3 align-items-start">
+                <div class="step-num">3</div>
+                <div>
+                    <h6 class="mb-1">Transcribe — UI or API</h6>
+                    <p class="text-muted mb-0">Use the web transcriber or POST your audio to <code>/api/transcribe</code> from your app.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section" id="api">
+    <div class="row align-items-center g-4">
+        <div class="col-lg-5">
+            <h2>A REST API developers enjoy</h2>
+            <p class="text-muted">
+                One endpoint, a multipart upload in and JSON out, authenticated by your personal
+                key. Pass <code>language=auto</code> to detect the language automatically.
+            </p>
+            <ul class="text-muted">
+                <li>WAV, MP3, OGG &amp; Opus uploads up to 200&nbsp;MB</li>
+                <li>Detected language, duration and timing returned with every response</li>
+                <li>Time-stamped <code>segments</code> for captions &amp; subtitles</li>
+                <li>Live <code>curl</code> generator inside the transcriber</li>
+            </ul>
+            <a class="btn btn-primary" asp-controller="Account" asp-action="@(signedIn ? "Profile" : "Login")">
+                @(signedIn ? "View my API key" : "Create an account")
+            </a>
+        </div>
+        <div class="col-lg-7">
+            <div class="code-block">curl -X POST https://ark-transcribe.immanuel.co/api/transcribe \
+  -H "X-Ark-Api-Key: ark_your_personal_key" \
+  -F "file=@@interview.mp3" \
+  -F "language=auto"
+
+# → {
+#     "text": "Hello and welcome to the show...",
+#     "language": "en",
+#     "durationSeconds": 92.4,
+#     "processingSeconds": 11.8,
+#     "segments": [
+#       { "start": 0.0, "end": 3.2, "text": "Hello and welcome to the show" }
+#     ]
+#   }</div>
+        </div>
+    </div>
+</section>
