@@ -15,6 +15,13 @@
 
 set -e
 
+# ── CPU tuning for Azure App Service (no GPU) ──────────────────────────────────
+# The generator defaults to CPU already; we pin it explicitly so a GPU/ARK_DEVICE
+# override can never change behaviour here, and let the decode use every vCPU
+# (was hard-capped at 4 before, leaving most of the SKU idle).
+export ARK_FORCE_CPU=1
+export ARK_NUM_THREADS="${ARK_NUM_THREADS:-$(nproc 2>/dev/null || echo 4)}"
+
 # ── Cache HuggingFace models in Azure persistent storage (/home is persistent)
 export HF_HOME="${HF_HOME:-/home/.cache/huggingface}"
 export TRANSFORMERS_CACHE="${HF_HOME}"

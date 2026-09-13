@@ -12,6 +12,7 @@ On first run each model is downloaded and cached by HuggingFace (~/. cache/huggi
 
 from __future__ import annotations
 
+import os
 import warnings
 from typing import Callable, Optional
 
@@ -31,6 +32,47 @@ _TOKENS_PER_SECOND = 50
 
 # Cap output to 20 s on CPU to avoid very long runtimes
 MAX_DURATION_SEC   = 20.0
+
+
+def _select_device() -> str:
+    """
+    Pick the torch device for generation.  Defaults to **CPU**.
+
+    CPU is required on Azure App Service (no GPU) and — perhaps surprisingly — is
+    also the fastest option on Apple Silicon for this workload: MusicGen decodes
+    autoregressively (one token at a time), so a GPU spends more time on
+    per-kernel dispatch/sync than on useful work.  Benchmarked on an M5, the MPS
+    path was ~2× *slower* than a multi-threaded CPU decode for the small model.
+
+    Opt into a GPU explicitly to A/B it (worth trying on the larger melody model,
+    where each step does more compute so the dispatch overhead matters less):
+      ARK_DEVICE=mps      – Apple-Silicon Metal
+      ARK_DEVICE=cuda     – NVIDIA
+      ARK_FORCE_CPU=1     – always CPU (wins over ARK_DEVICE; set on Azure)
+    """
+    if os.environ.get("ARK_FORCE_CPU") == "1":
+        return "cpu"
+    override = os.environ.get("ARK_DEVICE", "").strip().lower()
+    if override:
+        return override
+    return "cpu"
+
+
+def _cpu_thread_count() -> int:
+    """
+    Threads for the CPU decode.  Defaults to every core, override with
+    ``ARK_NUM_THREADS``.
+
+    All cores is correct on Azure's homogeneous Linux CPUs.  On Apple Silicon the
+    efficiency cores add memory-bandwidth contention, so a value near the
+    performance-core count can be a few percent faster — tune with
+    ``ARK_NUM_THREADS`` if you care about the last few percent.  The previous
+    hard floor of 4 left most of a modern machine idle.
+    """
+    override = os.environ.get("ARK_NUM_THREADS", "").strip()
+    if override.isdigit() and int(override) > 0:
+        return int(override)
+    return os.cpu_count() or 4
 
 
 def max_new_tokens_for(duration: float) -> int:
@@ -76,6 +118,7 @@ class MusicGenerator:
         self._melody_capable = "melody" in self._model_id
         self._model     = None
         self._processor = None
+        self._device    = _select_device()
         self.sample_rate: int = 32_000   # MusicGen default; updated after load
 
     # ──────────────────────────────────────────────────────────────────────────
@@ -88,7 +131,14 @@ class MusicGenerator:
 
         from transformers import AutoProcessor
 
+        # Any MPS op MusicGen may not implement yet falls back to CPU instead of
+        # raising — keeps generation working on Apple Silicon across torch
+        # versions.  No-op on the Azure/CPU path.
+        if self._device == "mps":
+            os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
+
         print(f"  Loading model  : {self._model_id}")
+        print(f"  Device         : {self._device}")
         print("  (First run downloads weights – this may take a few minutes)")
 
         self._processor = AutoProcessor.from_pretrained(self._model_id)
@@ -107,7 +157,7 @@ class MusicGenerator:
             )
 
         self._model.eval()
-        self._model.to("cpu")
+        self._model.to(self._device)
 
         # Grab actual sample rate from codec config
         try:
@@ -115,8 +165,10 @@ class MusicGenerator:
         except AttributeError:
             self.sample_rate = 32_000
 
-        # Maximise CPU throughput
-        torch.set_num_threads(max(torch.get_num_threads(), 4))
+        # On the CPU path, spread the decode across cores (env-tunable).  On MPS
+        # the heavy decode runs on the GPU, so CPU threads stay at torch default.
+        if self._device == "cpu":
+            torch.set_num_threads(_cpu_thread_count())
         print(f"  Sample rate    : {self.sample_rate} Hz")
         print(f"  Torch threads  : {torch.get_num_threads()}")
 
@@ -193,7 +245,7 @@ class MusicGenerator:
                 return_tensors="pt",
             )
 
-        inputs = {k: v.to("cpu") for k, v in inputs.items()}
+        inputs = {k: v.to(self._device) for k, v in inputs.items()}
 
         # ── Generate ──────────────────────────────────────────────────────────
         print(f"  Prompt         : {prompt[:120]}{'...' if len(prompt) > 120 else ''}")
