@@ -16,7 +16,6 @@ import warnings
 import numpy as np
 
 import torch
-import torchaudio
 
 # Silence verbose HF / torch warnings on CPU
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -147,17 +146,22 @@ class MusicGenerator:
         use_melody = melody_path is not None and self._melody_capable
 
         if use_melody:
-            melody_waveform, melody_sr = torchaudio.load(melody_path)
-            # Down-mix to mono for chroma conditioning
-            if melody_waveform.shape[0] > 1:
-                melody_waveform = melody_waveform.mean(dim=0, keepdim=True)
+            # Load the melody as a mono float32 numpy array via librosa.  This
+            # avoids torchaudio.load, which in torchaudio >= 2.8 delegates to
+            # TorchCodec (an extra package + matching FFmpeg) that isn't
+            # available on Azure App Service.  librosa already handles the
+            # down-mix to mono (mono=True) and preserves the native sample
+            # rate (sr=None).
+            import librosa
+
+            melody_np, melody_sr = librosa.load(melody_path, sr=None, mono=True)
 
             # Trim to duration
             max_samples = int(duration * melody_sr)
-            melody_waveform = melody_waveform[:, :max_samples]
+            melody_np = melody_np[:max_samples]
 
             inputs = self._processor(
-                audio=melody_waveform.squeeze(0).numpy(),
+                audio=melody_np,
                 sampling_rate=melody_sr,
                 text=[prompt],
                 padding=True,

@@ -2,6 +2,9 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
 
 # ── Core AI / ML ──────────────────────────────────────────────────────────────
+# torchaudio is required by transformers' MusicgenMelodyProcessor (chroma
+# feature extractor). We only use its transforms/functional ops — never
+# torchaudio.load — so no torchcodec/FFmpeg backend is needed. See generator.py.
 torch>=2.1.0
 torchaudio>=2.1.0
 transformers>=4.40.0
