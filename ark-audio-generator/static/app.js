@@ -243,6 +243,7 @@ $('genForm').addEventListener('submit', async e => {
     if (!res.ok) throw new Error(`Server error ${res.status}`);
     const { job_id } = await res.json();
     currentJobId = job_id;
+    setTrackLink(job_id);
     startPolling(job_id, payload);
   } catch (err) {
     showError(err.message);
@@ -325,8 +326,18 @@ async function pollStatus(jobId, payload) {
 function updateProgress(data) {
   const pct = data.progress ?? 0;
   $('progressBar').style.width = pct + '%';
-  $('statusMessage').textContent = data.message || '';
+  let msg = data.message || '';
+  if (data.status === 'queued' && data.queue_position) {
+    msg = `In queue · position ${data.queue_position} — ${msg}`;
+  }
+  $('statusMessage').textContent = msg;
   updateProgressSteps(pct);
+}
+
+// Point the "Track this job" link at the specific job on the tracking screen.
+function setTrackLink(jobId) {
+  const link = $('trackLink');
+  if (link && jobId) link.href = `/jobs.html?job=${jobId}`;
 }
 
 function showResult(jobId, data, payload) {
@@ -565,6 +576,7 @@ async function generateFromVocal() {
     }
     const { job_id } = await res.json();
     currentJobId = job_id;
+    setTrackLink(job_id);
     startPolling(job_id, null);
   } catch (err) {
     showError(err.message);

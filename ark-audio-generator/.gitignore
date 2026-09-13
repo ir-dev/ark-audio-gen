@@ -1,2 +1,14 @@
 
 .graphify/
+
+# Job queue DB + generated audio (runtime artefacts)
+generated/jobs.db
+generated/jobs.db-wal
+generated/jobs.db-shm
+generated/*.mp3
+generated/uploads/
+
+# Python / tooling
+__pycache__/
+*.pyc
+.pytest_cache/
