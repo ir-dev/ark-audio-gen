@@ -13,6 +13,8 @@ On first run each model is downloaded and cached by HuggingFace (~/. cache/huggi
 from __future__ import annotations
 
 import warnings
+from typing import Callable, Optional
+
 import numpy as np
 
 import torch
@@ -118,6 +120,7 @@ class MusicGenerator:
         guidance_scale: float = 3.5,
         temperature: float = 1.05,
         top_k: int = 250,
+        progress_cb: Optional[Callable[[float], None]] = None,
     ) -> tuple[np.ndarray, int]:
         """
         Generate audio from a text prompt with optional melody conditioning.
@@ -131,6 +134,10 @@ class MusicGenerator:
         guidance_scale: classifier-free guidance strength (higher = closer to prompt)
         temperature   : sampling temperature (slightly above 1 adds variety)
         top_k         : nucleus sampling k
+        progress_cb   : optional ``callback(fraction: float)`` invoked once per
+                        generated audio token with ``fraction`` in [0, 1] — the
+                        share of ``max_new_tokens`` produced so far.  Lets a UI
+                        track the (otherwise opaque) autoregressive decode loop.
 
         Returns
         -------
@@ -181,6 +188,12 @@ class MusicGenerator:
         print(f"  Duration       : {duration} s  ({max_new_tokens} tokens)")
         print(f"  Melody guided  : {use_melody}")
 
+        # ── Per-token progress hook ───────────────────────────────────────────
+        # MusicGen decodes autoregressively, so transformers invokes any
+        # StoppingCriteria once per generated token.  We attach one that never
+        # halts generation but reports how far through ``max_new_tokens`` we are.
+        stopping = self._build_progress_criteria(max_new_tokens, progress_cb)
+
         with torch.no_grad():
             output_tokens = self._model.generate(
                 **inputs,
@@ -189,7 +202,14 @@ class MusicGenerator:
                 temperature=temperature,
                 top_k=top_k,
                 max_new_tokens=max_new_tokens,
+                stopping_criteria=stopping,
             )
+
+        if progress_cb is not None:
+            try:
+                progress_cb(1.0)   # ensure the bar lands on 100% of this call
+            except Exception:
+                pass
 
         # output_tokens shape: (batch, channels, time)
         audio_tensor = output_tokens[0]   # first (only) batch item
@@ -209,3 +229,49 @@ class MusicGenerator:
             audio_np = audio_np / peak
 
         return audio_np.astype(np.float32), self.sample_rate
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Progress hook
+    # ──────────────────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _build_progress_criteria(
+        max_new_tokens: int,
+        progress_cb: Optional[Callable[[float], None]],
+    ):
+        """
+        Build a ``StoppingCriteriaList`` that reports decode progress.
+
+        Returns ``None`` when no callback is supplied so ``generate`` runs with
+        its default (no) criteria.  The criterion never stops generation — it
+        always returns all-False — it only measures how many tokens have been
+        produced relative to ``max_new_tokens``.
+        """
+        if progress_cb is None:
+            return None
+
+        from transformers import StoppingCriteria, StoppingCriteriaList
+
+        total = max(int(max_new_tokens), 1)
+
+        class _ProgressCriteria(StoppingCriteria):
+            def __init__(self) -> None:
+                self._start_len: int | None = None
+
+            def __call__(self, input_ids, scores, **kwargs):
+                cur = input_ids.shape[-1]
+                # First call establishes the prompt/BOS baseline length.
+                if self._start_len is None:
+                    self._start_len = cur
+                step = cur - self._start_len
+                frac = min(max(step / total, 0.0), 1.0)
+                try:
+                    progress_cb(frac)
+                except Exception:
+                    pass
+                # Never request a stop — return one False per sequence in batch.
+                return torch.zeros(
+                    input_ids.shape[0], dtype=torch.bool, device=input_ids.device
+                )
+
+        return StoppingCriteriaList([_ProgressCriteria()])

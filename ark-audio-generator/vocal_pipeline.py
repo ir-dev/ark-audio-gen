@@ -189,12 +189,22 @@ def run_vocal_to_music(
 
     acc_chunks: list[np.ndarray] = []
     n_seg = len(bounds)
+    # The accompaniment step owns the 30–75 % band; give each segment an equal
+    # slice of it and drive that slice from MusicGen's per-token progress.
+    ACC_BASE, ACC_SPAN = 30, 45
     for i, (start, end) in enumerate(bounds):
         seg_len = max(end - start, 0.5)
-        _p(
-            30 + int(45 * i / max(n_seg, 1)),
-            f"Generating accompaniment {i + 1}/{n_seg}…",
-        )
+        seg_base = ACC_BASE + ACC_SPAN * i / max(n_seg, 1)
+        seg_slice = ACC_SPAN / max(n_seg, 1)
+        _p(int(seg_base), f"Generating accompaniment {i + 1}/{n_seg}…")
+
+        def _seg_progress(frac: float, _base=seg_base, _slice=seg_slice,
+                          _idx=i) -> None:
+            _p(
+                int(_base + _slice * frac),
+                f"Generating accompaniment {_idx + 1}/{n_seg}… {int(frac * 100)}%",
+            )
+
         seg_vocal = vocal[:, int(start * MIX_SR): int(end * MIX_SR)]
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
             seg_path = tmp.name
@@ -206,6 +216,7 @@ def run_vocal_to_music(
                 duration=seg_len,
                 guidance_scale=plan.guidance_scale,
                 temperature=plan.temperature,
+                progress_cb=_seg_progress,
             )
         finally:
             try:

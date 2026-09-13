@@ -167,12 +167,28 @@ def _generate_sync(job_id: str, req: GenerateRequest) -> None:
         _set_job(job_id, status="processing", message="Loading AI model…", progress=10)
         gen = MusicGenerator(use_melody_model=is_audio_file)
         _set_job(job_id, message="Generating music… (2–10 min on CPU)", progress=30)
+
+        # Map MusicGen's per-token decode progress into the 30–80 % band so the
+        # polled status bar advances during the long generation call.
+        _last_pct = {"v": -1}
+
+        def _music_progress(frac: float) -> None:
+            pct = 30 + int(50 * frac)
+            if pct != _last_pct["v"]:
+                _last_pct["v"] = pct
+                _set_job(
+                    job_id, status="processing",
+                    message=f"Generating music… {int(frac * 100)}% (CPU)",
+                    progress=pct,
+                )
+
         audio, sr = gen.generate(
             prompt=prompt,
             melody_path=melody_path,
             duration=req.duration,
             guidance_scale=req.guidance_scale,
             temperature=req.temperature,
+            progress_cb=_music_progress,
         )
 
         # ── Effects ───────────────────────────────────────────────────────────
