@@ -33,6 +33,18 @@ _TOKENS_PER_SECOND = 50
 MAX_DURATION_SEC   = 20.0
 
 
+def max_new_tokens_for(duration: float) -> int:
+    """
+    Number of decoder tokens MusicGen will generate for ``duration`` seconds.
+
+    Mirrors exactly what :meth:`MusicGenerator.generate` passes as
+    ``max_new_tokens`` so callers (e.g. the job worker's ETA/token-count
+    display) can size the progress bar without loading the model.
+    """
+    duration = float(np.clip(duration, 1.0, MAX_DURATION_SEC))
+    return int(duration * _TOKENS_PER_SECOND) + 4  # small headroom
+
+
 class MusicGenerator:
     """
     Thin wrapper around HuggingFace MusicGen that handles both text-only
@@ -147,7 +159,7 @@ class MusicGenerator:
         self._load()
 
         duration = float(np.clip(duration, 1.0, MAX_DURATION_SEC))
-        max_new_tokens = int(duration * _TOKENS_PER_SECOND) + 4  # small headroom
+        max_new_tokens = max_new_tokens_for(duration)
 
         # ── Build processor inputs ────────────────────────────────────────────
         use_melody = melody_path is not None and self._melody_capable

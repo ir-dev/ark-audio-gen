@@ -110,6 +110,36 @@ except Exception as e:
     sys.exit(0)   # non-fatal – gunicorn still starts
 PYEOF
 
+# ── Pre-warm the melody model used for vocal → accompaniment jobs ──────────────
+# Runs in its own short-lived process so its ~1.5 GB footprint is freed before
+# gunicorn starts (only the on-disk HF cache persists).  The first vocal job
+# then loads from cache instead of stalling on a large download.  Set
+# PREWARM_MELODY=0 to skip this on a memory-constrained SKU.
+if [ "${PREWARM_MELODY:-1}" = "1" ]; then
+  echo "[startup] Pre-warming facebook/musicgen-melody model..."
+  python3 - <<'PYEOF'
+import os, sys
+os.environ.setdefault("HF_HOME", "/home/.cache/huggingface")
+os.environ.setdefault("TRANSFORMERS_CACHE", "/home/.cache/huggingface")
+try:
+    from transformers import AutoProcessor, MusicgenMelodyForConditionalGeneration
+    print("  Downloading / verifying melody processor...")
+    AutoProcessor.from_pretrained("facebook/musicgen-melody")
+    print("  Downloading / verifying melody model weights...")
+    MusicgenMelodyForConditionalGeneration.from_pretrained(
+        "facebook/musicgen-melody", torch_dtype="auto"
+    )
+    print("[startup] Melody model ready.")
+except Exception as e:
+    # Downloads happen before instantiation, so even an OOM here usually leaves
+    # the cache populated — the first vocal job just loads it lazily.
+    print(f"[startup] WARNING: melody pre-warm failed ({e}). Will retry on first request.")
+    sys.exit(0)   # non-fatal – gunicorn still starts
+PYEOF
+else
+  echo "[startup] PREWARM_MELODY=0 — skipping melody pre-warm (loads lazily on first vocal job)."
+fi
+
 exec gunicorn api:app \
   --worker-class uvicorn.workers.UvicornWorker \
   --bind "0.0.0.0:${PORT}" \

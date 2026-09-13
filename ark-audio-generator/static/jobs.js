@@ -25,6 +25,29 @@ function fmtTime(epochSeconds) {
   return d.toLocaleString();
 }
 
+// Human-friendly "time remaining", e.g. 45s / 2m 15s / 3m.
+function fmtEta(seconds) {
+  if (seconds == null || !Number.isFinite(seconds) || seconds < 0) return '';
+  const s = Math.round(seconds);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  const rem = s % 60;
+  return rem ? `${m}m ${rem}s` : `${m}m`;
+}
+
+// Extra live detail for an in-flight job: ETA and token progress.
+function progressDetail(job) {
+  if (job.status !== 'processing') return '';
+  const parts = [];
+  if (Number.isFinite(job.eta_seconds) && job.eta_seconds > 0) {
+    parts.push(`~${fmtEta(job.eta_seconds)} left`);
+  }
+  if (job.tokens_total) {
+    parts.push(`${job.tokens_done ?? 0}/${job.tokens_total} tokens`);
+  }
+  return parts.length ? ` · ${parts.join(' · ')}` : '';
+}
+
 function badges(job) {
   const out = [];
   if (job.genre)    out.push(`🎸 ${esc(job.genre)}`);
@@ -79,7 +102,7 @@ function renderJob(job) {
       <div class="job-bar-wrap"><div class="job-bar${barClass}" style="width:${pct}%"></div></div>
       <div class="job-msg">${esc(statusText(job))}${
         job.status === 'error' ? '' : ` · ${pct}%`
-      }</div>
+      }${progressDetail(job)}</div>
       <div class="job-meta">${badges(job)}</div>
       <div class="job-actions">${actions(job)}</div>
       <div class="job-time">Created ${fmtTime(job.created_at)}</div>

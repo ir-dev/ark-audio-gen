@@ -55,12 +55,42 @@ def _make_generator(use_melody: bool):
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# ETA estimation
+# ──────────────────────────────────────────────────────────────────────────────
+
+class _EtaState:
+    """
+    Estimates seconds-remaining by extrapolating from the wall-clock rate so far.
+
+    ``start`` is anchored to the *first* progress tick (i.e. once real work has
+    begun), so the estimate reflects the generation rate rather than being skewed
+    by model-load time.  Returns ``None`` while it's still too early to be
+    meaningful.
+    """
+
+    __slots__ = ("start",)
+
+    def __init__(self) -> None:
+        self.start: float | None = None
+
+    def eta(self, frac: float) -> int | None:
+        now = time.time()
+        if self.start is None:
+            self.start = now
+        elapsed = now - self.start
+        if frac <= 0.02 or elapsed < 0.3:
+            return None
+        return max(int(elapsed * (1.0 - frac) / frac), 0)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Job processors
 # ──────────────────────────────────────────────────────────────────────────────
 
 def process_text(job: dict) -> None:
     """Text-prompt → backing track (mirrors the old ``_generate_sync``)."""
     from effects import process_audio
+    from generator import max_new_tokens_for
     from prompt_builder import build_prompt, infer_parameters
 
     job_id = job["id"]
@@ -96,21 +126,33 @@ def process_text(job: dict) -> None:
     gen = _make_generator(is_audio_file)
     job_store.update_job(job_id, message="Generating music… (CPU)", progress=30)
 
+    duration = float(p.get("duration", 15.0))
+    total_tokens = max_new_tokens_for(duration)
     _last = {"pct": -1}
+    _eta = _EtaState()
 
     def _cb(frac: float) -> None:
         pct = 30 + int(50 * frac)
-        if pct != _last["pct"]:
-            _last["pct"] = pct
-            job_store.update_job(
-                job_id, status=job_store.PROCESSING, progress=pct,
-                message=f"Generating music… {int(frac * 100)}%",
-            )
+        if pct == _last["pct"]:
+            return
+        _last["pct"] = pct
+        result = {
+            "tokens_done": int(round(frac * total_tokens)),
+            "tokens_total": total_tokens,
+        }
+        eta = _eta.eta(frac)
+        if eta is not None:
+            result["eta_seconds"] = eta
+        job_store.update_job(
+            job_id, status=job_store.PROCESSING, progress=pct,
+            message=f"Generating music… {int(frac * 100)}%",
+            result=result,
+        )
 
     audio, sr = gen.generate(
         prompt=prompt,
         melody_path=melody_path,
-        duration=float(p.get("duration", 15.0)),
+        duration=duration,
         guidance_scale=float(p.get("guidance_scale", 3.5)),
         temperature=float(p.get("temperature", 1.05)),
         progress_cb=_cb,
@@ -140,7 +182,7 @@ def process_text(job: dict) -> None:
             "mode": "text",
             "genre": effective_genre,
             "mood": effective_mood,
-            "duration": float(p.get("duration", 15.0)),
+            "duration": duration,
         },
     )
 
@@ -154,10 +196,19 @@ def process_vocal(job: dict) -> None:
     vocal_path = p["vocal_path"]
     overrides = p.get("overrides", {})
 
+    _eta = _EtaState()
+
     try:
         def _cb(pct: int, msg: str) -> None:
-            job_store.update_job(job_id, status=job_store.PROCESSING,
-                                 progress=int(pct), message=msg)
+            pct = int(pct)
+            fields = {"status": job_store.PROCESSING, "progress": pct, "message": msg}
+            # Estimate remaining time only once real generation is under way
+            # (the fast analysis phase would skew an early estimate).
+            if pct >= 30:
+                eta = _eta.eta(pct / 100.0)
+                if eta is not None:
+                    fields["result"] = {"eta_seconds": eta}
+            job_store.update_job(job_id, **fields)
 
         job_store.update_job(job_id, status=job_store.PROCESSING,
                              message="Starting…", progress=3)

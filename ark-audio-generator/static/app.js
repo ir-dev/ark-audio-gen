@@ -323,12 +323,32 @@ async function pollStatus(jobId, payload) {
 // UI state handlers
 // ──────────────────────────────────────────────────────────────────────────────
 
+// Human-friendly "time remaining", e.g. 45s / 2m 15s / 3m.
+function fmtEta(seconds) {
+  if (seconds == null || !Number.isFinite(seconds) || seconds < 0) return '';
+  const s = Math.round(seconds);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  const rem = s % 60;
+  return rem ? `${m}m ${rem}s` : `${m}m`;
+}
+
 function updateProgress(data) {
   const pct = data.progress ?? 0;
   $('progressBar').style.width = pct + '%';
   let msg = data.message || '';
   if (data.status === 'queued' && data.queue_position) {
     msg = `In queue · position ${data.queue_position} — ${msg}`;
+  }
+  if (data.status === 'processing') {
+    const extra = [];
+    if (Number.isFinite(data.eta_seconds) && data.eta_seconds > 0) {
+      extra.push(`~${fmtEta(data.eta_seconds)} left`);
+    }
+    if (data.tokens_total) {
+      extra.push(`${data.tokens_done ?? 0}/${data.tokens_total} tokens`);
+    }
+    if (extra.length) msg += ` · ${extra.join(' · ')}`;
   }
   $('statusMessage').textContent = msg;
   updateProgressSteps(pct);
