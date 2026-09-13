@@ -17,6 +17,7 @@ pydub>=0.25.1
 fastapi>=0.111.0
 uvicorn[standard]>=0.29.0
 gunicorn>=22.0.0
+python-multipart>=0.0.9          # multipart/form-data uploads (vocal-to-music)
 
 # ── CLI (used by main.py) ─────────────────────────────────────────────────────
 typer[all]>=0.12.0

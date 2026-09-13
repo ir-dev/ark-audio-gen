@@ -107,6 +107,18 @@ const STEPS = [
   { label: 'Exporting MP3',      minProgress: 92 },
 ];
 
+// Steps for the vocal → music pipeline (progress values match api.py callbacks)
+const VOCAL_STEPS = [
+  { label: 'Analysing vocal',        minProgress: 0  },
+  { label: 'Extracting structure',   minProgress: 18 },
+  { label: 'Generating arrangement', minProgress: 30 },
+  { label: 'Synchronising with vocal', minProgress: 80 },
+  { label: 'Exporting audio',        minProgress: 94 },
+];
+
+// Steps currently driving the progress tracker (set by initProgressSteps)
+let currentSteps = STEPS;
+
 // ──────────────────────────────────────────────────────────────────────────────
 // State
 // ──────────────────────────────────────────────────────────────────────────────
@@ -124,7 +136,8 @@ const $ = id => document.getElementById(id);
 function show(id)  { $(id).classList.remove('hidden'); }
 function hide(id)  { $(id).classList.add('hidden');    }
 function section(which) {
-  ['progressSection', 'resultSection', 'errorSection'].forEach(s => hide(s));
+  ['progressSection', 'resultSection', 'vocalResultSection', 'errorSection']
+    .forEach(s => hide(s));
   if (which) show(which);
 }
 
@@ -241,10 +254,11 @@ $('genForm').addEventListener('submit', async e => {
 // Progress steps
 // ──────────────────────────────────────────────────────────────────────────────
 
-function initProgressSteps() {
+function initProgressSteps(steps) {
+  currentSteps = steps || STEPS;
   const list = $('stepsList');
   list.innerHTML = '';
-  STEPS.forEach((s, i) => {
+  currentSteps.forEach((s, i) => {
     const div = document.createElement('div');
     div.className = 'step';
     div.id = `step-${i}`;
@@ -254,9 +268,9 @@ function initProgressSteps() {
 }
 
 function updateProgressSteps(progress) {
-  STEPS.forEach((s, i) => {
+  currentSteps.forEach((s, i) => {
     const el = $(`step-${i}`);
-    const nextMin = STEPS[i + 1]?.minProgress ?? 101;
+    const nextMin = currentSteps[i + 1]?.minProgress ?? 101;
     if (progress >= nextMin) {
       el.className = 'step done';
       el.querySelector('.step-dot').textContent = '✓';
@@ -289,7 +303,11 @@ async function pollStatus(jobId, payload) {
 
     if (data.status === 'done') {
       clearInterval(pollTimer);
-      showResult(jobId, data, payload);
+      if (data.mode === 'vocal') {
+        showVocalResult(jobId, data);
+      } else {
+        showResult(jobId, data, payload);
+      }
     } else if (data.status === 'error') {
       clearInterval(pollTimer);
       showError(data.message);
@@ -352,6 +370,12 @@ function resetButton() {
   const btn = $('generateBtn');
   btn.disabled = false;
   $('btnText').textContent = 'Generate Track';
+  // Vocal button (only present once its DOM exists)
+  const vBtn = $('vocalGenerateBtn');
+  if (vBtn) {
+    vBtn.disabled = !selectedVocalFile;
+    $('vocalBtnText').textContent = 'Generate accompaniment';
+  }
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -374,9 +398,248 @@ $('retryBtn').addEventListener('click', () => {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 
+// ══════════════════════════════════════════════════════════════════════════════
+// VOCAL → MUSIC MODE
+// ══════════════════════════════════════════════════════════════════════════════
+
+let selectedVocalFile = null;
+let vocalPreviewURL   = null;
+
+// ── Mode switching ────────────────────────────────────────────────────────────
+
+function switchMode(mode) {
+  const describe = mode === 'describe';
+  $('tabDescribe').classList.toggle('active', describe);
+  $('tabVocal').classList.toggle('active', !describe);
+  $('tabDescribe').setAttribute('aria-selected', String(describe));
+  $('tabVocal').setAttribute('aria-selected', String(!describe));
+  $('modeDescribe').classList.toggle('hidden', !describe);
+  $('modeVocal').classList.toggle('hidden', describe);
+  // Reset any in-flight/finished result view when the user switches modes.
+  section(null);
+}
+
+$('tabDescribe').addEventListener('click', () => switchMode('describe'));
+$('tabVocal').addEventListener('click', () => switchMode('vocal'));
+
+// ── File selection (click + drag/drop) ───────────────────────────────────────
+
+function handleVocalFile(file) {
+  if (!file) return;
+  selectedVocalFile = file;
+
+  const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+  $('dropzoneSub').textContent = `${file.name} · ${sizeMB} MB`;
+  $('dropzone').classList.add('has-file');
+
+  // Inline preview of the raw vocal
+  if (vocalPreviewURL) URL.revokeObjectURL(vocalPreviewURL);
+  vocalPreviewURL = URL.createObjectURL(file);
+  $('vocalPreviewPlayer').src = vocalPreviewURL;
+  show('vocalPreview');
+
+  // Enable actions; hide any stale analysis
+  $('analyzeBtn').disabled = false;
+  $('vocalGenerateBtn').disabled = false;
+  hide('analysisSection');
+}
+
+function initVocalControls() {
+  const dz    = $('dropzone');
+  const input = $('vocalFile');
+
+  dz.addEventListener('click', () => input.click());
+  dz.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+  });
+  input.addEventListener('change', e => handleVocalFile(e.target.files[0]));
+
+  ['dragenter', 'dragover'].forEach(ev =>
+    dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('dragover'); }));
+  ['dragleave', 'drop'].forEach(ev =>
+    dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('dragover'); }));
+  dz.addEventListener('drop', e => {
+    const file = e.dataTransfer?.files?.[0];
+    if (file) handleVocalFile(file);
+  });
+
+  $('vGuidance').addEventListener('input', e => {
+    $('vGuidanceVal').textContent = parseFloat(e.target.value).toFixed(1);
+  });
+
+  $('analyzeBtn').addEventListener('click', analyzeVocal);
+  $('vocalGenerateBtn').addEventListener('click', generateFromVocal);
+  $('vocalNewTrackBtn').addEventListener('click', resetVocalFlow);
+
+  // Mix / accompaniment preview toggle on the result card
+  $('mixTabFull').addEventListener('click', () => setMixVariant('mix'));
+  $('mixTabAccomp').addEventListener('click', () => setMixVariant('accompaniment'));
+}
+
+// ── Analyse (fast, model-free) ────────────────────────────────────────────────
+
+async function analyzeVocal() {
+  if (!selectedVocalFile) return;
+  const btn = $('analyzeBtn');
+  btn.disabled = true;
+  $('analyzeBtnText').textContent = 'Analysing…';
+
+  try {
+    const fd = new FormData();
+    fd.append('file', selectedVocalFile);
+    const res = await fetch('/api/vocal/analyze', { method: 'POST', body: fd });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Server error ${res.status}`);
+    }
+    const { analysis } = await res.json();
+    renderAnalysis(analysis);
+  } catch (err) {
+    showError(err.message);
+  } finally {
+    btn.disabled = false;
+    $('analyzeBtnText').textContent = 'Re-analyse vocal';
+  }
+}
+
+function renderAnalysis(a) {
+  $('analysisSummary').textContent = a.melody_summary || '';
+  const grid = $('analysisGrid');
+  grid.innerHTML = '';
+
+  const cards = [
+    ['Key',        a.key_name],
+    ['Tempo',      `${Math.round(a.tempo_bpm)} BPM`],
+    ['Mood',       a.suggested_mood],
+    ['Genre',      a.suggested_genre],
+    ['Range',      (a.pitch_min_note && a.pitch_max_note)
+                     ? `${a.pitch_min_note}–${a.pitch_max_note}` : '—'],
+    ['Register',   a.register],
+    ['Contour',    a.contour],
+    ['Phrases',    String(a.phrase_count)],
+    ['Chords',     (a.chord_progression || []).join(' · ') || '—'],
+    ['Instruments',(a.suggested_instruments || []).join(', ') || '—'],
+  ];
+  cards.forEach(([label, val]) => {
+    const div = document.createElement('div');
+    div.className = 'analysis-card';
+    div.innerHTML = `<span class="analysis-label">${label}</span>
+                     <span class="analysis-value">${val}</span>`;
+    grid.appendChild(div);
+  });
+  show('analysisSection');
+  $('analysisSection').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ── Generate accompaniment ────────────────────────────────────────────────────
+
+async function generateFromVocal() {
+  if (!selectedVocalFile) {
+    $('dropzone').click();
+    return;
+  }
+
+  const btn = $('vocalGenerateBtn');
+  btn.disabled = true;
+  $('vocalBtnText').textContent = 'Generating…';
+
+  const fd = new FormData();
+  fd.append('file', selectedVocalFile);
+  const g = $('vGenre').value;          if (g) fd.append('genre', g);
+  const m = $('vMood').value;           if (m) fd.append('mood', m);
+  const i = $('vInstruments').value.trim(); if (i) fd.append('instruments', i);
+  const t = $('vTempo').value;          if (t) fd.append('tempo_bpm', t);
+  const c = $('vCrescendo').value;      if (c) fd.append('crescendo', c);
+  fd.append('guidance_scale', $('vGuidance').value);
+
+  section('progressSection');
+  initProgressSteps(VOCAL_STEPS);
+  updateProgress({ status: 'pending', message: 'Queued…', progress: 0 });
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+
+  try {
+    const res = await fetch('/api/vocal/generate', { method: 'POST', body: fd });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Server error ${res.status}`);
+    }
+    const { job_id } = await res.json();
+    currentJobId = job_id;
+    startPolling(job_id, null);
+  } catch (err) {
+    showError(err.message);
+    resetButton();
+  }
+}
+
+// ── Result ────────────────────────────────────────────────────────────────────
+
+function showVocalResult(jobId, data) {
+  section('vocalResultSection');
+  currentJobId = jobId;
+
+  // Default to the full mix
+  setMixVariant('mix');
+  $('vocalDownloadMix').href   = `/api/download/${jobId}?variant=mix`;
+  $('vocalDownloadAccomp').href = `/api/download/${jobId}?variant=accompaniment`;
+
+  const a = data.analysis || {};
+  const meta = $('vocalTrackMeta');
+  meta.innerHTML = '';
+  const badges = [
+    data.key   ? `🎼 ${data.key}` : null,
+    data.tempo ? `🥁 ${Math.round(data.tempo)} BPM` : null,
+    data.genre ? `🎸 ${data.genre}` : null,
+    data.mood  ? `✨ ${data.mood}` : null,
+    (a.chord_progression && a.chord_progression.length)
+      ? `🎹 ${a.chord_progression.join(' · ')}` : null,
+    data.duration ? `⏱ ${data.duration}s` : null,
+  ].filter(Boolean);
+  badges.forEach(b => {
+    const span = document.createElement('span');
+    span.className = 'meta-badge';
+    span.textContent = b;
+    meta.appendChild(span);
+  });
+
+  const warnEl = $('vocalWarning');
+  if (data.warnings && data.warnings.length) {
+    warnEl.textContent = '⚠️ ' + data.warnings.join(' ');
+    show('vocalWarning');
+  } else {
+    hide('vocalWarning');
+  }
+
+  resetButton();
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+}
+
+function setMixVariant(variant) {
+  const full = variant === 'mix';
+  $('mixTabFull').classList.toggle('active', full);
+  $('mixTabAccomp').classList.toggle('active', !full);
+  if (currentJobId) {
+    const player = $('vocalAudioPlayer');
+    const wasPlaying = !player.paused;
+    player.src = `/api/download/${currentJobId}?variant=${variant}`;
+    if (wasPlaying) player.play().catch(() => {});
+  }
+}
+
+function resetVocalFlow() {
+  if (currentJobId) {
+    fetch(`/api/job/${currentJobId}`, { method: 'DELETE' }).catch(() => {});
+    currentJobId = null;
+  }
+  section(null);
+  $('vocalAudioPlayer').src = '';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 // Init
 // ──────────────────────────────────────────────────────────────────────────────
 
 buildSamples();
 initControls();
+initVocalControls();

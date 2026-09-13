@@ -24,6 +24,19 @@
 <!-- ═══════════ MAIN ═══════════ -->
 <main class="container">
 
+  <!-- ── Mode switcher ── -->
+  <div class="mode-tabs" role="tablist">
+    <button class="mode-tab active" id="tabDescribe" role="tab" aria-selected="true">
+      <span class="mode-tab-icon">✍️</span> Describe a melody
+    </button>
+    <button class="mode-tab" id="tabVocal" role="tab" aria-selected="false">
+      <span class="mode-tab-icon">🎤</span> Turn my vocal into music
+    </button>
+  </div>
+
+  <!-- ══════ MODE: DESCRIBE ══════ -->
+  <div id="modeDescribe" class="mode-panel">
+
   <!-- ── Sample melodies ── -->
   <section class="samples-section">
     <h2 class="section-title">
@@ -168,6 +181,139 @@
     </form>
   </section>
 
+  </div><!-- /#modeDescribe -->
+
+  <!-- ══════ MODE: VOCAL → MUSIC ══════ -->
+  <div id="modeVocal" class="mode-panel hidden">
+
+    <!-- ── Upload ── -->
+    <section class="form-section">
+      <h2 class="section-title"><span class="icon">🎤</span> Upload a vocal recording</h2>
+      <p class="section-hint">
+        Hum, sing, or improvise — we analyse your melody and build music around it.
+        WAV / MP3 / FLAC / OGG / M4A, up to 25&nbsp;MB.
+      </p>
+
+      <div id="dropzone" class="dropzone" tabindex="0" role="button"
+           aria-label="Upload or drop a vocal file">
+        <input type="file" id="vocalFile" accept="audio/*,.wav,.mp3,.flac,.ogg,.m4a,.aac" hidden />
+        <div class="dropzone-inner">
+          <span class="dropzone-icon">⬆️</span>
+          <p class="dropzone-text"><strong>Click to choose</strong> or drag a vocal file here</p>
+          <p class="dropzone-sub" id="dropzoneSub">No file selected</p>
+        </div>
+      </div>
+
+      <div id="vocalPreview" class="vocal-preview hidden">
+        <audio id="vocalPreviewPlayer" controls class="audio-player"></audio>
+      </div>
+
+      <div class="vocal-actions">
+        <button type="button" id="analyzeBtn" class="btn-secondary" disabled>
+          <span class="btn-icon">🔍</span> <span id="analyzeBtnText">Analyse vocal</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ── Detected characteristics ── -->
+    <section id="analysisSection" class="analysis-section hidden">
+      <h2 class="section-title"><span class="icon">🎼</span> Detected musical characteristics</h2>
+      <p class="section-hint" id="analysisSummary"></p>
+      <div class="analysis-grid" id="analysisGrid"></div>
+    </section>
+
+    <!-- ── Arrangement options + generate ── -->
+    <section class="form-section">
+      <h2 class="section-title"><span class="icon">🎛️</span> Arrangement</h2>
+      <p class="section-hint">Everything is auto-detected from your vocal — override only if you want to.</p>
+
+      <details class="advanced-toggle">
+        <summary>⚙️ Override auto-detected settings (optional)</summary>
+        <div class="advanced-grid">
+
+          <div class="field">
+            <label for="vGenre" class="field-label">Genre</label>
+            <select id="vGenre" name="genre">
+              <option value="">Auto (from vocal)</option>
+              <option value="pop">Pop</option>
+              <option value="rock">Rock</option>
+              <option value="jazz">Jazz</option>
+              <option value="classical">Classical</option>
+              <option value="folk">Folk</option>
+              <option value="electronic">Electronic</option>
+              <option value="hip-hop">Hip-Hop</option>
+              <option value="r-and-b">R&amp;B / Soul</option>
+              <option value="ambient">Ambient</option>
+              <option value="reggae">Reggae</option>
+              <option value="bossa-nova">Bossa Nova</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="vMood" class="field-label">Mood</label>
+            <select id="vMood" name="mood">
+              <option value="">Auto (from vocal)</option>
+              <option value="happy">Happy</option>
+              <option value="uplifting">Uplifting</option>
+              <option value="energetic">Energetic</option>
+              <option value="calm">Calm</option>
+              <option value="romantic">Romantic</option>
+              <option value="sad">Sad / Melancholic</option>
+              <option value="nostalgic">Nostalgic</option>
+              <option value="playful">Playful</option>
+              <option value="mysterious">Mysterious</option>
+              <option value="aggressive">Aggressive</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="vInstruments" class="field-label">Instruments</label>
+            <input type="text" id="vInstruments" name="instruments"
+                   placeholder="Auto — e.g. piano, bass, drums" maxlength="200" />
+          </div>
+
+          <div class="field">
+            <label for="vTempo" class="field-label">Tempo (BPM)</label>
+            <input type="number" id="vTempo" name="tempo_bpm"
+                   placeholder="Auto" min="40" max="220" step="1" />
+          </div>
+
+          <div class="field">
+            <label for="vCrescendo" class="field-label">Crescendo pattern</label>
+            <select id="vCrescendo" name="crescendo">
+              <option value="">Auto (from vocal)</option>
+              <option value="natural">Natural S-curve</option>
+              <option value="rise">Rise to end</option>
+              <option value="fall">Fall to end</option>
+              <option value="rise-fall">Rise then fall</option>
+              <option value="verse-chorus">Verse–chorus waves</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="vGuidance" class="field-label">
+              Guidance: <strong id="vGuidanceVal">3.0</strong>
+              <span class="hint">(higher = closer to prompt)</span>
+            </label>
+            <input type="range" id="vGuidance" name="guidance_scale"
+                   min="1" max="8" step="0.5" value="3.0" />
+            <div class="range-labels"><span>1 free</span><span>8 strict</span></div>
+          </div>
+
+        </div>
+      </details>
+
+      <button type="button" id="vocalGenerateBtn" class="btn-generate" disabled>
+        <span class="btn-icon">🎶</span>
+        <span id="vocalBtnText">Generate accompaniment</span>
+      </button>
+      <p class="section-hint" style="text-align:center;margin-top:.6rem;">
+        Generation runs on CPU and can take several minutes.
+      </p>
+    </section>
+
+  </div><!-- /#modeVocal -->
+
   <!-- ── Progress ── -->
   <section id="progressSection" class="result-section hidden">
     <div class="progress-card">
@@ -195,6 +341,34 @@
           ⬇️ Download MP3
         </a>
         <button id="newTrackBtn" class="btn-new">🔄 Make another</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Vocal result ── -->
+  <section id="vocalResultSection" class="result-section hidden">
+    <div class="result-card">
+      <div class="result-header">
+        <span class="result-icon">✅</span>
+        <h3>Your vocal has a band now!</h3>
+      </div>
+      <div class="track-meta" id="vocalTrackMeta"></div>
+      <p id="vocalWarning" class="vocal-warning hidden"></p>
+
+      <div class="mix-toggle" role="tablist">
+        <button class="mix-tab active" id="mixTabFull" role="tab">🎤 Vocal + music</button>
+        <button class="mix-tab" id="mixTabAccomp" role="tab">🎹 Music only</button>
+      </div>
+      <audio id="vocalAudioPlayer" controls class="audio-player"></audio>
+
+      <div class="result-actions">
+        <a id="vocalDownloadMix" class="btn-download" download="ark_vocal_track.mp3">
+          ⬇️ Download mix
+        </a>
+        <a id="vocalDownloadAccomp" class="btn-download btn-download-alt" download="ark_accompaniment.mp3">
+          ⬇️ Music only
+        </a>
+        <button id="vocalNewTrackBtn" class="btn-new">🔄 New vocal</button>
       </div>
     </div>
   </section>

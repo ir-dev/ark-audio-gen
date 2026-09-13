@@ -3,6 +3,14 @@
 Generate rhythmic, lively sing-along backing tracks from any melody description using
 **Meta MusicGen** — running entirely on CPU, delivered as a web application.
 
+Two ways in:
+
+* **Describe a melody** — type a description, get a backing track.
+* **Turn my vocal into music** — upload a vocal-only recording (humming, singing,
+  improvisation) and the app analyses your performance, arranges a complementary
+  accompaniment around it, and mixes your original vocal back on top. See
+  [Vocal → Music](#vocal--music-pipeline).
+
 ---
 
 ## Features
@@ -13,8 +21,9 @@ Generate rhythmic, lively sing-along backing tracks from any melody description 
 | Output | MP3, 192 kbps, stereo, up to 20 seconds |
 | Parameters | Genre, mood, instruments, frequency range, crescendo pattern, guidance scale, temperature |
 | Smart defaults | All optional fields are inferred from the melody description |
+| **Vocal → Music** | Upload a vocal; auto-detect key, tempo, pitch range, phrasing, mood; arrange + synchronise + mix |
 | Post-processing | Compressor → 3-band EQ → Beat enhancement → Crescendo envelope → Tremolo → Reverb → Stereo widening |
-| Web UI | Single-page app, 12 regional sample melodies, real-time progress |
+| Web UI | Single-page app, mode switcher, 12 regional sample melodies, drag-and-drop vocal upload, real-time progress |
 | API | FastAPI, async job queue, polling-based progress |
 | Deployment | Azure App Service (Linux, Python 3.11) |
 
@@ -24,17 +33,25 @@ Generate rhythmic, lively sing-along backing tracks from any melody description 
 
 ```
 audio-gen/
-├── api.py                ← FastAPI app (web + REST API)
+├── api.py                ← FastAPI app (web + REST API, both modes)
 ├── generator.py          ← MusicGen inference wrapper
-├── effects.py            ← Audio post-processing chain
+├── effects.py            ← Audio post-processing chain (shared primitives)
 ├── prompt_builder.py     ← Smart prompt construction & parameter inference
-├── main.py               ← CLI entry point (optional, standalone)
+├── main.py               ← CLI: describe-a-melody (optional, standalone)
+│
+│   ── Vocal → Music pipeline ──
+├── vocal_analysis.py     ← Analyse a vocal: key, tempo, pitch, phrasing, mood
+├── arrangement.py        ← Turn the analysis into a generation + mix plan
+├── vocal_mixer.py        ← Vocal-aware EQ carve, ducking, sync & mix
+├── vocal_pipeline.py     ← Orchestrator (analyse → arrange → generate → mix)
+├── vocalize.py           ← CLI: vocal-to-music (optional, standalone)
+│
 ├── startup.sh            ← Azure App Service startup command
 ├── requirements.txt      ← Python dependencies
 ├── .gitignore
 ├── README.md             ← This file
 └── static/               ← Frontend (served by FastAPI)
-    ├── index.html
+    ├── index.html        ← SPA with a mode switcher (describe / upload vocal)
     ├── style.css
     └── app.js
 ```
@@ -123,10 +140,12 @@ All endpoints are also documented at **http://localhost:8000/docs** (Swagger UI)
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/api/health` | Health check (used by Azure load balancer) |
-| `POST` | `/api/generate` | Submit generation job → `{ "job_id": "..." }` |
-| `GET` | `/api/status/{job_id}` | Poll status → `{ "status", "message", "progress" }` |
-| `GET` | `/api/download/{job_id}` | Stream the finished MP3 |
-| `DELETE` | `/api/job/{job_id}` | Clean up a job and its file |
+| `POST` | `/api/generate` | Submit a describe-a-melody job → `{ "job_id": "..." }` |
+| `POST` | `/api/vocal/analyze` | Upload a vocal (multipart `file`) → `{ "analysis": {...} }` (fast, no generation) |
+| `POST` | `/api/vocal/generate` | Upload a vocal (multipart `file` + optional overrides) → `{ "job_id": "..." }` |
+| `GET` | `/api/status/{job_id}` | Poll status → `{ "status", "message", "progress", … }` (vocal jobs also return `analysis`, `plan`, `warnings`) |
+| `GET` | `/api/download/{job_id}` | Stream the finished MP3. `?variant=mix` (default) or `?variant=accompaniment` |
+| `DELETE` | `/api/job/{job_id}` | Clean up a job and its files |
 
 ### POST /api/generate — request body
 
@@ -145,6 +164,82 @@ All endpoints are also documented at **http://localhost:8000/docs** (Swagger UI)
 ```
 
 All fields except `melody` are optional.
+
+---
+
+## Vocal → Music pipeline
+
+Upload a **vocal-only recording** and the app builds music around it, in this flow:
+
+```
+Upload Vocal → Analyse Vocal → Extract Musical Structure
+             → Generate Arrangement → Synchronise with Vocal → Preview → Export
+```
+
+### What it detects (`vocal_analysis.py`)
+
+Approximate melody & pitch movement, pitch range / register, tempo (BPM),
+phrasing (voiced segments and pauses), musical key + mode (Krumhansl–Schmuckler
+key finding), melodic contour, dynamics, and — derived from those — a suggested
+genre, mood, supportive instrument palette and diatonic chord progression.
+
+### How it arranges & mixes
+
+* **`arrangement.py`** turns the analysis into a plan: a MusicGen prompt that
+  pins the detected key, tempo and chord progression and explicitly asks for an
+  *instrumental accompaniment that leaves space for a solo singer*.
+* **`generator.py`** (the melody-conditioned `musicgen-melody` model) generates
+  the accompaniment, conditioned on the actual vocal. Longer vocals are handled
+  by **segmented generation** with crossfades.
+* **`vocal_mixer.py`** processes the accompaniment with a vocal-friendly effects
+  chain (reusing `effects.py`), **carves EQ space** around the vocal's
+  fundamental and presence band so instruments don't mask the voice,
+  **sidechain-ducks** the backing under the vocal, then **synchronises** (trims/
+  pads the accompaniment to the exact vocal length) and mixes the *original*
+  vocal — unchanged — back on top.
+
+Two files come out of every job: the **full mix** (`?variant=mix`) and the
+**accompaniment only** (`?variant=accompaniment`).
+
+### Overrides & limits
+
+Everything is auto-detected, but any of `genre`, `mood`, `instruments`,
+`tempo_bpm`, `crescendo`, `guidance_scale` may be sent to override the detected
+value (blank = keep auto). Generation length is bounded by two env vars so CPU
+runtime stays sane:
+
+| Env var | Default | Meaning |
+|---|---|---|
+| `ARK_VOCAL_MAX_SECONDS` | `30` | Max vocal length processed (longer is truncated) |
+| `ARK_VOCAL_SEGMENT_SECONDS` | `15` | Window size for segmented generation |
+
+### CLI
+
+```bash
+# Fully automatic
+python vocalize.py my_humming.wav
+
+# Analyse only (fast, no generation)
+python vocalize.py my_humming.wav --analyze-only
+
+# With overrides
+python vocalize.py my_singing.wav --genre jazz --mood calm \
+    --instruments "piano,double bass,brushed drums" -o song.mp3
+```
+
+### REST (curl)
+
+```bash
+# Analyse (fast)
+curl -X POST http://localhost:8000/api/vocal/analyze -F "file=@my_humming.wav"
+
+# Generate; then poll status and download both variants
+JOB=$(curl -s -X POST http://localhost:8000/api/vocal/generate \
+        -F "file=@my_humming.wav" -F "genre=folk" | python3 -c "import sys,json;print(json.load(sys.stdin)['job_id'])")
+curl -s http://localhost:8000/api/status/$JOB
+curl -s "http://localhost:8000/api/download/$JOB?variant=mix"          -o mix.mp3
+curl -s "http://localhost:8000/api/download/$JOB?variant=accompaniment" -o music_only.mp3
+```
 
 ---
 
@@ -285,6 +380,9 @@ python3 -m py_compile generator.py && echo "generator.py OK"
 python3 -m py_compile prompt_builder.py && echo "prompt_builder.py OK"
 python3 -m py_compile api.py && echo "api.py OK"
 python3 -m py_compile main.py && echo "main.py OK"
+# Vocal → Music modules
+python3 -m py_compile vocal_analysis.py arrangement.py vocal_mixer.py \
+    vocal_pipeline.py vocalize.py && echo "vocal pipeline OK"
 
 # 4. Smoke-test prompt builder + effects chain (no model download required)
 python3 - <<'EOF'
@@ -312,6 +410,38 @@ EOF
 
 # 5. Confirm CLI help renders
 python3 main.py --help
+python3 vocalize.py --help
+
+# 5b. Smoke-test the vocal pipeline end-to-end WITHOUT MusicGen
+#     (synthesises a hum, analyses it, and runs the mix with a stub generator)
+python3 - <<'EOF'
+import numpy as np, soundfile as sf, tempfile
+from vocal_analysis import analyze_vocal
+from arrangement import plan_arrangement
+from vocal_pipeline import run_vocal_to_music, VocalPipelineResult
+
+sr = 32000
+t = np.linspace(0, 6, 6*sr, endpoint=False)
+notes = [261.63, 293.66, 329.63, 349.23, 329.63, 293.66]
+y = np.zeros_like(t); seg = len(t)//len(notes)
+for i, f in enumerate(notes):
+    s, e = i*seg, (i+1)*seg; tt = t[s:e]
+    y[s:e] = (np.sin(2*np.pi*f*tt) + 0.3*np.sin(2*np.pi*2*f*tt)) * np.hanning(len(tt))
+path = tempfile.mktemp(suffix=".wav"); sf.write(path, (0.6*y).astype(np.float32), sr)
+
+a = analyze_vocal(path); print("key:", a.key_name, "| tempo:", a.tempo_bpm, "| mood:", a.suggested_mood)
+print("chords:", a.chord_progression, "| summary:", a.melody_summary)
+
+class StubGen:
+    sample_rate = sr
+    def generate(self, prompt, melody_path, duration, guidance_scale, temperature):
+        n = int(duration*sr); return (np.random.randn(2, n).astype("float32")*0.2, sr)
+
+res = run_vocal_to_music(path, generator_factory=lambda: StubGen())
+assert res.mix.shape[0] == 2 and np.isfinite(res.mix).all()
+print("mix shape:", res.mix.shape, "| segments:", res.segments, "| peak:", round(float(np.max(np.abs(res.mix))),3))
+print("VOCAL PIPELINE OK")
+EOF
 
 # 6. Confirm FastAPI app loads (no model download, just import check)
 python3 -c "import api; print('FastAPI app loaded OK')"
