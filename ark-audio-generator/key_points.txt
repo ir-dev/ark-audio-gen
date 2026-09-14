@@ -142,3 +142,69 @@ az webapp deploy \
   --type zip \
   --clean true \
   --async false
+
+
+==== run locally on M5 mac (Apple Silicon)
+
+# NOTE: differs from the Azure notes above on purpose:
+#   - DO NOT use the CPU-only wheel index (--index-url .../whl/cpu). On Apple
+#     Silicon the default PyPI wheel is the native arm64 build and includes the
+#     MPS (Metal) backend. The cpu index gives a slower, MPS-less build.
+#   - ffmpeg comes from Homebrew locally (startup.sh's static-binary install is
+#     Azure-only). audio_io.find_ffmpeg() picks it up off PATH automatically.
+
+# ── ffmpeg (needed for MP3 export) ──────────────────────────────────
+> brew install ffmpeg          # skip if `ffmpeg -version` already works
+
+# ── one-time setup ──────────────────────────────────────────────────
+> python3 -m venv .venv
+> source .venv/bin/activate
+> pip install --upgrade pip
+> pip install torch torchaudio        # native arm64 wheel — NOT the cpu index
+> pip install -r requirements.txt
+
+# ── CLI ─────────────────────────────────────────────────────────────
+# Activate the venv first in every new terminal:
+> source .venv/bin/activate
+
+> python main.py --help
+
+# Default device is CPU — fastest here: MusicGen decodes one token at a time,
+# so for musicgen-small MPS benchmarked ~2x SLOWER than a threaded CPU decode.
+> python main.py "a cheerful whistling tune in C major" --duration 10 --output test.mp3
+
+> python main.py "generate a typical ilayaraja song which reflects tamil" \
+    --duration 10 --output test_i1.mp3
+
+# Full manual control
+> python main.py "jazz piano riff with walking bass" \
+    --genre jazz --mood uplifting \
+    --instruments piano,bass,drums \
+    --duration 15 --output jazz_track.mp3
+
+# Vocal / melody source file (uses the larger musicgen-melody model)
+> python main.py /path/to/melody.wav --genre pop --mood happy --output singalong.mp3
+> python main.py isaiah_54_17.mp3 --genre pop --mood happy --output singalong.mp3
+
+# ── tuning knobs (all optional) ─────────────────────────────────────
+# This box: 4 performance + 6 efficiency cores. Default uses all 10; pinning
+# near the P-core count avoids E-core memory-bandwidth contention:
+> ARK_NUM_THREADS=4 python main.py "upbeat pop chorus" --duration 8 --output quick_test.mp3
+
+# A/B the Metal GPU (worth trying on the bigger melody model; CPU wins on small).
+# PYTORCH_ENABLE_MPS_FALLBACK is set by the code automatically for unimplemented ops:
+> ARK_DEVICE=mps python main.py "energetic rock anthem" --genre rock --mood energetic --duration 20
+
+# Force CPU regardless of ARK_DEVICE (matches the Azure path):
+> ARK_FORCE_CPU=1 python main.py "lively folk tune with a bouncy rhythm"
+
+# ── web app (FastAPI) locally ───────────────────────────────────────
+# Either run the module directly:
+> python api.py                       # serves http://localhost:8000 (reload on)
+# ...or drive uvicorn yourself:
+> uvicorn api:app --host 0.0.0.0 --port 8000 --reload
+# Override the port:
+> PORT=8080 python api.py
+
+# ── tests ───────────────────────────────────────────────────────────
+> pytest -q

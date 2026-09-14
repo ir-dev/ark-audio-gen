@@ -52,6 +52,12 @@ PROCESSING = "processing"
 DONE = "done"
 ERROR = "error"
 
+# How many times a job may be (re)started before we give up.  A job that is
+# interrupted by a restart is automatically re-queued and re-run from the top;
+# this cap stops a job that crashes the whole container (e.g. OOM) from looping
+# forever.  Each claim counts as one attempt.
+_MAX_ATTEMPTS = int(os.environ.get("ARK_MAX_JOB_ATTEMPTS", "3"))
+
 # Fields a caller is allowed to mutate via :func:`update_job`.
 _MUTABLE = {
     "status", "progress", "message", "result", "error",
@@ -73,6 +79,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     error               TEXT,
     file                TEXT,
     file_accompaniment  TEXT,
+    attempts            INTEGER NOT NULL DEFAULT 0,
     created_at          REAL NOT NULL,
     updated_at          REAL NOT NULL
 );
@@ -112,35 +119,57 @@ def _connect() -> sqlite3.Connection:
 
 
 def init_db() -> None:
-    """Create the schema (idempotent)."""
+    """Create the schema (idempotent) and migrate older DBs in place."""
     with _connect() as conn:
         conn.executescript(_SCHEMA)
+        # Migration: the ``attempts`` column was added later — backfill it on
+        # DBs created before that so upgrades don't wipe the existing queue.
+        cols = {r["name"] for r in conn.execute("PRAGMA table_info(jobs)")}
+        if "attempts" not in cols:
+            conn.execute(
+                "ALTER TABLE jobs ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0"
+            )
 
 
 def recover_orphans() -> int:
     """
     Repair jobs left mid-flight by a previous (crashed/recycled) worker.
 
-    A job stuck in ``processing`` cannot be resumed — the in-memory model
-    state is gone — so it is marked ``error`` with a clear message.  Jobs still
-    ``queued`` are left untouched; the worker will pick them up normally.
+    A job stuck in ``processing`` can't literally resume — the in-memory model
+    state is gone — but every parameter needed to reproduce it is on disk, so
+    instead of failing it we **re-queue it** and the worker re-runs it from the
+    top.  From the caller's point of view the job simply continues across the
+    restart with no resubmission.
 
-    Returns the number of orphaned jobs repaired.
+    Jobs that have already burned :data:`_MAX_ATTEMPTS` starts are marked
+    ``error`` instead of looping — this guards against a job that crashes the
+    whole container on every attempt.  Jobs still ``queued`` are left untouched.
+
+    Returns the number of orphaned jobs repaired (re-queued + failed).
     """
     now = time.time()
     with _connect() as conn:
-        cur = conn.execute(
-            "UPDATE jobs SET status=?, error=?, message=?, updated_at=? "
-            "WHERE status=?",
+        # Exhausted their retries → give up with a clear message.
+        failed = conn.execute(
+            "UPDATE jobs SET status=?, progress=0, error=?, message=?, updated_at=? "
+            "WHERE status=? AND attempts >= ?",
             (
                 ERROR,
-                "Interrupted by a server restart.",
-                "Interrupted by a server restart — please resubmit.",
+                "Interrupted repeatedly by server restarts.",
+                "Interrupted repeatedly by server restarts — please resubmit.",
                 now,
                 PROCESSING,
+                _MAX_ATTEMPTS,
             ),
-        )
-        return cur.rowcount
+        ).rowcount
+        # Still have retries left → put them back on the queue to run again.
+        requeued = conn.execute(
+            "UPDATE jobs SET status=?, progress=0, error=NULL, "
+            "message='Resuming after a server restart…', updated_at=? "
+            "WHERE status=? AND attempts < ?",
+            (QUEUED, now, PROCESSING, _MAX_ATTEMPTS),
+        ).rowcount
+        return failed + requeued
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -231,7 +260,8 @@ def claim_next_job() -> Optional[dict]:
             return None
         now = time.time()
         conn.execute(
-            "UPDATE jobs SET status=?, message=?, progress=?, updated_at=? WHERE id=?",
+            "UPDATE jobs SET status=?, message=?, progress=?, "
+            "attempts=attempts+1, updated_at=? WHERE id=?",
             (PROCESSING, "Starting…", 1, now, row["id"]),
         )
         conn.execute("COMMIT")
@@ -241,6 +271,7 @@ def claim_next_job() -> Optional[dict]:
     job = _row_to_dict(row)
     job["status"] = PROCESSING
     job["progress"] = 1
+    job["attempts"] = (row["attempts"] or 0) + 1
     return job
 
 

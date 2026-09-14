@@ -46,7 +46,7 @@ import job_worker
 async def lifespan(_app: FastAPI):
     # ── Startup: prepare the queue and launch the worker ──────────────────────
     job_store.init_db()
-    job_store.recover_orphans()      # fail any jobs a prior crash left mid-flight
+    job_store.recover_orphans()      # re-queue any jobs a prior crash left mid-flight
     _purge_expired()
     job_worker.start()               # begins draining the queue (unless disabled)
     yield

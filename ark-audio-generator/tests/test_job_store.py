@@ -68,21 +68,47 @@ def test_queue_position(store):
     assert store.queue_position(store.get_job(ids[0])) == 0
 
 
-def test_recover_orphans(store):
-    jid = store.create_job("vocal", {"vocal_path": "/tmp/x.wav"})
-    store.claim_next_job()                      # now processing
+def test_recover_orphans_requeues(store):
+    # An interrupted (processing) job is put back on the queue, not failed, so
+    # the worker re-runs it from the top after a restart.
+    jid = store.create_job("text", {"melody": "y"})
+    store.claim_next_job()                      # now processing (attempt 1)
     assert store.get_job(jid)["status"] == store.PROCESSING
 
     n = store.recover_orphans()
     assert n == 1
     job = store.get_job(jid)
-    assert job["status"] == store.ERROR
-    assert "restart" in job["message"].lower()
+    assert job["status"] == store.QUEUED
+    assert job["progress"] == 0
+    assert "resum" in job["message"].lower()
+    assert job.get("error") is None
+
+    # It's genuinely re-claimable, and each claim counts as an attempt.
+    reclaimed = store.claim_next_job()
+    assert reclaimed["id"] == jid
+    assert reclaimed["attempts"] == 2
 
     # Queued jobs are untouched by recovery.
-    qid = store.create_job("text", {"melody": "y"})
-    assert store.recover_orphans() == 0
+    qid = store.create_job("text", {"melody": "z"})
+    assert store.recover_orphans() == 1         # only the reclaimed one above
     assert store.get_job(qid)["status"] == store.QUEUED
+
+
+def test_recover_orphans_gives_up_after_max_attempts(store, monkeypatch):
+    # A job that keeps getting interrupted is eventually failed rather than
+    # looping forever (guards against a job that crashes the container).
+    monkeypatch.setattr(store, "_MAX_ATTEMPTS", 2)
+    jid = store.create_job("text", {"melody": "y"})
+
+    store.claim_next_job()                      # attempt 1
+    assert store.recover_orphans() == 1
+    assert store.get_job(jid)["status"] == store.QUEUED
+
+    store.claim_next_job()                      # attempt 2 (== cap)
+    assert store.recover_orphans() == 1
+    job = store.get_job(jid)
+    assert job["status"] == store.ERROR
+    assert "repeatedly" in job["message"].lower()
 
 
 def test_delete_job(store):
