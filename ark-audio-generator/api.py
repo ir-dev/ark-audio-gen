@@ -37,6 +37,7 @@ from starlette.concurrency import run_in_threadpool
 
 import job_store
 import job_worker
+import paths
 
 # ──────────────────────────────────────────────────────────────────────────────
 # App setup
@@ -44,7 +45,8 @@ import job_worker
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    # ── Startup: prepare the queue and launch the worker ──────────────────────
+    # ── Startup: prepare storage + queue and launch the worker ────────────────
+    paths.ensure_dirs()              # data root lives on persistent storage
     job_store.init_db()
     job_store.recover_orphans()      # re-queue any jobs a prior crash left mid-flight
     _purge_expired()
@@ -61,12 +63,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-OUTPUT_DIR = Path("generated")
-OUTPUT_DIR.mkdir(exist_ok=True)
+# Persistent storage locations (see :mod:`paths`).  Directory creation happens
+# in the lifespan startup hook via ``paths.ensure_dirs()``.
+OUTPUT_DIR = paths.output_dir()
 
 # Uploaded vocals live here transiently (removed once a job finishes).
-UPLOAD_DIR = OUTPUT_DIR / "uploads"
-UPLOAD_DIR.mkdir(exist_ok=True)
+UPLOAD_DIR = paths.upload_dir()
 
 # Accepted vocal upload formats / size cap.
 _VOCAL_EXTS = {".wav", ".mp3", ".flac", ".ogg", ".aiff", ".m4a", ".aac"}

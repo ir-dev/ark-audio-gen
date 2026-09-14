@@ -82,7 +82,19 @@ app settings update
     TRANSFORMERS_CACHE=/home/.cache/huggingface \
     HF_HUB_DISABLE_PROGRESS_BARS=1 \
     WEBSITES_CONTAINER_START_TIME_LIMIT=1800 \
-    SCM_COMMAND_IDLE_TIMEOUT=3600
+    SCM_COMMAND_IDLE_TIMEOUT=3600 \
+    ARK_DATA_DIR=/home/data
+# ARK_DATA_DIR: persistent root for the job DB + generated tracks + uploads.
+# MUST be under /home and OUTSIDE wwwroot so a `--clean` deploy can't wipe it.
+# startup.sh also defaults it to /home/data, so this is belt-and-suspenders.
+# Optional: ARK_MAX_JOB_ATTEMPTS (default 3) caps auto-resume retries per job.
+
+> az webapp config appsettings set \
+  --resource-group rg-cad-planner-i1-d \
+  --name ntt-sap-tkt \
+  --slot audio-gen \
+  --settings \
+    ARK_DATA_DIR=/home/data
 
 startup command update
 > az webapp config set \
@@ -91,7 +103,8 @@ startup command update
   --slot audio-gen \
   --startup-file "bash startup.sh"
 
-cd "./ark-audio-gen"
+# cd "./ark-audio-gen"
+cd /Users/Immanuel.Raj/Immi/git_src/ark-audio-gen/ark-audio-generator
 
 zip -r deploy.zip . \
   -x ".venv/*" \

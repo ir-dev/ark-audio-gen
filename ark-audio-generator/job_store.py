@@ -22,8 +22,8 @@ Implementation notes
 * Pure stdlib (``sqlite3``) — no new dependency.
 * WAL journal + ``busy_timeout`` make it safe for the FastAPI request threads
   to read while the worker thread writes.
-* The DB lives on Azure's persistent ``/home`` (path via ``ARK_DB_PATH``),
-  so it survives container restarts.
+* The DB lives under the persistent data root (see :mod:`paths`) so it survives
+  both container restarts and redeploys.
 """
 
 from __future__ import annotations
@@ -37,14 +37,12 @@ import uuid
 from pathlib import Path
 from typing import Any, Optional
 
-# Default DB location (persistent on Azure — generated/ sits under
-# /home/site/wwwroot).  Resolved per-connection via :func:`_db_path` so tests
-# can point ``ARK_DB_PATH`` at a temp file without re-importing this module.
-_DEFAULT_DB_PATH = "generated/jobs.db"
+import paths
 
-
+# DB location is resolved per-connection (via :mod:`paths`) so tests can point
+# ``ARK_DB_PATH`` at a temp file without re-importing this module.
 def _db_path() -> Path:
-    return Path(os.environ.get("ARK_DB_PATH", _DEFAULT_DB_PATH))
+    return paths.db_path()
 
 # Job lifecycle states.
 QUEUED = "queued"

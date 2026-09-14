@@ -29,9 +29,10 @@ from pathlib import Path
 import numpy as np
 
 import job_store
+import paths
 from audio_io import write_mp3
 
-OUTPUT_DIR = Path("generated")
+OUTPUT_DIR = paths.output_dir()
 
 _AUDIO_EXTS = {".wav", ".mp3", ".flac", ".ogg", ".aiff"}
 

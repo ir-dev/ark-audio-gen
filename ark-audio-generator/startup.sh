@@ -28,8 +28,13 @@ export TRANSFORMERS_CACHE="${HF_HOME}"
 export HF_HUB_DISABLE_SYMLINKS_WARNING=1
 export HF_HUB_DISABLE_PROGRESS_BARS=1
 
-# ── Create output directory for generated MP3s
-mkdir -p generated
+# ── Persistent data root for the job DB, generated tracks and uploaded vocals.
+#    MUST live under /home (the only persistent mount) and OUTSIDE wwwroot, or a
+#    `--clean` ZIP deploy would wipe every in-flight job and finished track.
+export ARK_DATA_DIR="${ARK_DATA_DIR:-/home/data}"
+
+# ── Create the data + model-cache directories
+mkdir -p "${ARK_DATA_DIR}/uploads"
 mkdir -p "${HF_HOME}"
 
 # ── Resolve port (Azure sets PORT or WEBSITES_PORT)
