@@ -10,8 +10,10 @@ override any field (genre, mood, instruments, tempo, key, arrangement) while the
 auto-detected vocal characteristics remain the default — exactly the extension
 point called for in the feature spec.
 
-Prompt construction reuses :func:`prompt_builder.build_prompt` so the vocal flow
-and the existing "describe melody" flow share one prompt vocabulary.
+The MusicGen prompt is built here rather than through
+:func:`prompt_builder.build_prompt`: that builder writes long "sing-along"
+captions that ask for a lead melody, which is exactly what an *accompaniment*
+must not have.  See :func:`_build_arrangement_prompt`.
 """
 
 from __future__ import annotations
@@ -19,7 +21,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field, asdict
 from typing import Optional
 
-from prompt_builder import build_prompt
 from vocal_analysis import VocalAnalysis
 
 
@@ -45,10 +46,12 @@ class ArrangementPlan:
     guidance_scale: float = 3.5
     temperature: float = 1.0
 
-    # Mixing / synchronisation controls
+    # Mixing / synchronisation controls.  Levels are *matched* automatically in
+    # the mixer (vocal normalised, backing set relative to it); the two gain
+    # fields are trims on top of that, so 0 dB means "the matched balance".
     crescendo: str = "natural"
     vocal_center_hz: float = 220.0     # vocal fundamental → where to carve space
-    accompaniment_gain_db: float = -3.0
+    accompaniment_gain_db: float = 0.0
     vocal_gain_db: float = 0.0
     duck_depth_db: float = 6.0         # how hard the backing ducks under the vocal
 
@@ -107,42 +110,71 @@ def plan_arrangement(
     return plan
 
 
+# Backing-oriented style vocabulary.  MusicGen was trained on short, concrete
+# captions (a dozen or two words), so every phrase here describes *sound*, not
+# intent, and none of them invite a lead melody or a singer — that is what the
+# uploaded vocal is for.
+_GENRE_BACKING_STYLE: dict[str, str] = {
+    "pop":        "clean pop production, steady drums, warm chords",
+    "rock":       "driving rhythm guitars, solid drums, electric bass",
+    "jazz":       "swinging rhythm section, comping piano, walking bass",
+    "classical":  "orchestral strings and piano, gentle dynamics",
+    "folk":       "acoustic guitar strumming, warm and organic",
+    "electronic": "synth pads, programmed beat, pulsing bass",
+    "hip-hop":    "boom bap drums, deep bass, sparse keys",
+    "r-and-b":    "smooth soul groove, electric piano chords, laid-back drums",
+    "ambient":    "soft evolving pads, spacious and slow",
+    "reggae":     "offbeat skank guitar, deep bass, relaxed drums",
+    "bossa-nova": "gentle bossa nova rhythm, nylon guitar, brushed drums",
+}
+
+_GENRE_LABEL: dict[str, str] = {
+    "r-and-b": "R&B", "hip-hop": "hip hop", "bossa-nova": "bossa nova",
+}
+
+_MOOD_FEEL: dict[str, str] = {
+    "happy":      "bright and joyful",
+    "sad":        "melancholic and tender",
+    "energetic":  "driving and energetic",
+    "calm":       "gentle and relaxed",
+    "romantic":   "warm and tender",
+    "uplifting":  "warm and uplifting",
+    "mysterious": "moody and atmospheric",
+    "aggressive": "intense and powerful",
+    "nostalgic":  "warm and bittersweet",
+    "playful":    "light and bouncy",
+}
+
+
 def _build_arrangement_prompt(analysis: VocalAnalysis, plan: ArrangementPlan) -> str:
     """
-    Compose the MusicGen text prompt for an *accompaniment* (not a full song).
+    Compose a short, MusicGen-friendly caption for an *accompaniment*.
 
-    We reuse the shared prompt vocabulary, then append the vocal-specific
-    conditioning: key, tempo, chord progression, and an explicit instruction to
-    stay out of the lead vocal's way.
+    Deliberately concise (≈ 30–40 T5 tokens): key, tempo, genre, instruments
+    and feel.  The melodic detail does not go into the text at all — the model
+    receives the melody directly through the chroma of the uploaded vocal.
+    Words like "vocal", "melody" or "sing-along" are avoided on purpose: they
+    make MusicGen synthesise a lead line (or vocal-like noises) that then
+    fights the real singer.
     """
-    melody_hint = (
-        analysis.melody_summary
-        or f"a {plan.mood} vocal melody in {plan.key} {plan.mode}"
-    )
+    genre_key = (plan.genre or "pop").lower().replace(" ", "-")
+    genre_label = _GENRE_LABEL.get(genre_key, genre_key.replace("-", " "))
+    style = _GENRE_BACKING_STYLE.get(genre_key, "steady rhythm section, warm chords")
+    feel = _MOOD_FEEL.get((plan.mood or "").lower(), (plan.mood or "warm").lower())
 
-    base = build_prompt(
-        melody_description=melody_hint,
-        genre=plan.genre,
-        mood=plan.mood,
-        instruments=plan.instruments,
-        frequency_range=None,
-        inferred={"genre": plan.genre, "mood": plan.mood},
-    )
+    instruments = [i.strip() for i in (plan.instruments or []) if i and i.strip()]
+    inst = ", ".join(instruments[:4]) if instruments else "piano, bass, drums"
 
     tempo = int(round(plan.tempo_bpm))
-    chords = " – ".join(plan.chord_progression) if plan.chord_progression else ""
-
-    extras = [
-        "instrumental accompaniment only",
-        "no lead vocals, leave harmonic and midrange space for a solo singer",
-        f"in the key of {plan.key} {plan.mode}",
-        f"at {tempo} BPM",
+    parts = [
+        f"{feel} {genre_label} instrumental backing track",
+        inst,
+        style,
+        f"in {plan.key} {plan.mode}",
+        f"{tempo} bpm",
+        "steady groove, instrumental, no vocals",
     ]
-    if chords:
-        extras.append(f"chord progression {chords}")
-    extras.append("supportive backing that follows and complements the vocal melody")
-
-    return base + ", " + ", ".join(extras)
+    return ", ".join(parts)
 
 
 __all__ = ["ArrangementPlan", "plan_arrangement"]

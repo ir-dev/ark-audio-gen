@@ -13,6 +13,8 @@ On first run each model is downloaded and cached by HuggingFace (~/. cache/huggi
 from __future__ import annotations
 
 import os
+import platform
+import sys
 import warnings
 from typing import Callable, Optional
 
@@ -30,8 +32,10 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 # MusicGen encodes audio at 50 tokens / second (EnCodec frame rate).
 _TOKENS_PER_SECOND = 50
 
-# Cap output to 20 s on CPU to avoid very long runtimes
-MAX_DURATION_SEC   = 20.0
+# Longest single generation.  MusicGen is trained on 30 s clips and its melody
+# conditioning covers exactly 30 s, so 30 s is the natural ceiling; the text
+# mode keeps its own tighter 20 s limit in api.py/main.py for CPU time.
+MAX_DURATION_SEC   = float(os.environ.get("ARK_MAX_DURATION_SEC", "30"))
 
 
 def _select_device() -> str:
@@ -56,6 +60,45 @@ def _select_device() -> str:
     if override:
         return override
     return "cpu"
+
+
+_DTYPES = {
+    "float32": torch.float32, "fp32": torch.float32,
+    "bfloat16": torch.bfloat16, "bf16": torch.bfloat16,
+    "float16": torch.float16, "fp16": torch.float16,
+}
+
+
+def _is_apple_silicon() -> bool:
+    return sys.platform == "darwin" and platform.machine() in ("arm64", "aarch64")
+
+
+def _select_dtype(device: str) -> torch.dtype:
+    """
+    Weight precision, ``ARK_DTYPE=float32|bfloat16|float16``.
+
+    The melody model is 1.55 B parameters: 6.2 GB in float32 but 3.1 GB in
+    bfloat16.  On a box where those 6 GB do not fit next to everything else
+    (a 16 GB laptop with a browser and a VM open, or a 3.5 GB Azure B2 plan)
+    float32 does not merely run slower — the weights get paged from disk on
+    every one of the ~1 500 decode steps and a 30 s clip takes hours.
+
+    Measured on an M5 (10 cores, 16 GB), musicgen-melody, 30 tokens:
+        cpu / float32   : swapping, > 7 min for 30 tokens
+        cpu / bfloat16  : 0.05 s / token   (30 s clip ≈ 80 s)
+        mps / bfloat16  : 0.06 s / token
+        mps / float16   : 0.05 s / token
+    bfloat16 keeps float32's exponent range, so the T5 text encoder (which
+    overflows in float16) is safe.  It is therefore the default on MPS, CUDA
+    and Apple-Silicon CPUs.  Other CPUs (Azure's x86 workers) stay on float32
+    unless ``ARK_DTYPE`` says otherwise — many of them lack native bf16 matmul.
+    """
+    name = os.environ.get("ARK_DTYPE", "").strip().lower()
+    if name in _DTYPES:
+        return _DTYPES[name]
+    if device in ("mps", "cuda") or (device == "cpu" and _is_apple_silicon()):
+        return torch.bfloat16
+    return torch.float32
 
 
 def _cpu_thread_count() -> int:
@@ -119,6 +162,7 @@ class MusicGenerator:
         self._model     = None
         self._processor = None
         self._device    = _select_device()
+        self._dtype     = _select_dtype(self._device)
         self.sample_rate: int = 32_000   # MusicGen default; updated after load
 
     # ──────────────────────────────────────────────────────────────────────────
@@ -139,6 +183,7 @@ class MusicGenerator:
 
         print(f"  Loading model  : {self._model_id}")
         print(f"  Device         : {self._device}")
+        print(f"  Precision      : {str(self._dtype).replace('torch.', '')}")
         print("  (First run downloads weights – this may take a few minutes)")
 
         self._processor = AutoProcessor.from_pretrained(self._model_id)
@@ -147,13 +192,13 @@ class MusicGenerator:
             from transformers import MusicgenMelodyForConditionalGeneration
             self._model = MusicgenMelodyForConditionalGeneration.from_pretrained(
                 self._model_id,
-                torch_dtype=torch.float32,
+                torch_dtype=self._dtype,
             )
         else:
             from transformers import MusicgenForConditionalGeneration
             self._model = MusicgenForConditionalGeneration.from_pretrained(
                 self._model_id,
-                torch_dtype=torch.float32,
+                torch_dtype=self._dtype,
             )
 
         self._model.eval()
@@ -185,6 +230,7 @@ class MusicGenerator:
         temperature: float = 1.05,
         top_k: int = 250,
         progress_cb: Optional[Callable[[float], None]] = None,
+        continuation: Optional[tuple[np.ndarray, int]] = None,
     ) -> tuple[np.ndarray, int]:
         """
         Generate audio from a text prompt with optional melody conditioning.
@@ -202,6 +248,13 @@ class MusicGenerator:
                         generated audio token with ``fraction`` in [0, 1] — the
                         share of ``max_new_tokens`` produced so far.  Lets a UI
                         track the (otherwise opaque) autoregressive decode loop.
+        continuation  : optional ``(audio, sample_rate)`` — a few seconds of
+                        music the new clip must *continue from*.  The audio is
+                        tokenised with the model's EnCodec and used as the
+                        decoder prompt (MusicGen's audio-continuation mode);
+                        the returned audio contains only the newly generated
+                        ``duration`` seconds, not the prompt.  This is how the
+                        vocal pipeline keeps consecutive 30 s windows coherent.
 
         Returns
         -------
@@ -245,12 +298,26 @@ class MusicGenerator:
                 return_tensors="pt",
             )
 
-        inputs = {k: v.to(self._device) for k, v in inputs.items()}
+        inputs = {
+            k: (v.to(self._device, dtype=self._dtype) if v.is_floating_point()
+                else v.to(self._device))
+            for k, v in inputs.items()
+        }
+
+        # ── Audio continuation (decoder prompt) ───────────────────────────────
+        extra_kwargs: dict = {}
+        prompt_samples = 0
+        if continuation is not None:
+            decoder_input_ids, prompt_samples = self._encode_continuation(*continuation)
+            if decoder_input_ids is not None:
+                extra_kwargs["decoder_input_ids"] = decoder_input_ids
 
         # ── Generate ──────────────────────────────────────────────────────────
         print(f"  Prompt         : {prompt[:120]}{'...' if len(prompt) > 120 else ''}")
         print(f"  Duration       : {duration} s  ({max_new_tokens} tokens)")
         print(f"  Melody guided  : {use_melody}")
+        if prompt_samples:
+            print(f"  Continuing from: {prompt_samples / self.sample_rate:.1f} s of audio")
 
         # ── Per-token progress hook ───────────────────────────────────────────
         # MusicGen decodes autoregressively, so transformers invokes any
@@ -258,9 +325,10 @@ class MusicGenerator:
         # halts generation but reports how far through ``max_new_tokens`` we are.
         stopping = self._build_progress_criteria(max_new_tokens, progress_cb)
 
-        with torch.no_grad():
+        with torch.inference_mode():
             output_tokens = self._model.generate(
                 **inputs,
+                **extra_kwargs,
                 do_sample=True,
                 guidance_scale=guidance_scale,
                 temperature=temperature,
@@ -281,6 +349,10 @@ class MusicGenerator:
         # Convert to float32 numpy, shape (channels, samples) or (samples,)
         audio_np = audio_tensor.cpu().float().numpy()
 
+        # Drop the decoded continuation prompt — callers only want new audio.
+        if prompt_samples:
+            audio_np = audio_np[..., prompt_samples:]
+
         # Ensure stereo (duplicate mono if needed)
         if audio_np.ndim == 1:
             audio_np = np.stack([audio_np, audio_np])
@@ -293,6 +365,52 @@ class MusicGenerator:
             audio_np = audio_np / peak
 
         return audio_np.astype(np.float32), self.sample_rate
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Audio continuation
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def _encode_continuation(
+        self, audio: np.ndarray, sr: int,
+    ) -> tuple[Optional[torch.Tensor], int]:
+        """
+        Tokenise ``audio`` with the model's EnCodec so it can prime the decoder.
+
+        Returns ``(decoder_input_ids, prompt_samples)`` where the ids have the
+        ``(num_codebooks, frames)`` layout MusicGen's ``generate`` expects and
+        ``prompt_samples`` is how much of the decoded output belongs to the
+        prompt.  Mirrors what the text-only model does internally for
+        ``input_values``; the melody model in transformers has no such hook, so
+        it is done here for both.
+        """
+        encoder = getattr(self._model, "audio_encoder", None)
+        if encoder is None:
+            return None, 0
+
+        mono = np.asarray(audio, dtype=np.float32)
+        if mono.ndim == 2:
+            mono = mono.mean(axis=0)
+        if int(sr) != int(self.sample_rate):
+            import librosa
+            mono = librosa.resample(mono, orig_sr=int(sr), target_sr=int(self.sample_rate))
+        if mono.size < self.sample_rate // 10:          # < 100 ms: not worth it
+            return None, 0
+        peak = float(np.max(np.abs(mono)))
+        if peak > 0:
+            mono = mono / peak * 0.9
+
+        hop = int(getattr(self._model.config.audio_encoder, "hop_length", 0) or
+                  self.sample_rate // _TOKENS_PER_SECOND)
+
+        x = torch.from_numpy(mono)[None, None, :].to(self._device, dtype=self._dtype)
+        with torch.inference_mode():
+            codes = encoder.encode(x).audio_codes        # (frames, batch, codebooks, T)
+        ids = codes[0, 0]                                # (codebooks, T)
+        n_codebooks = int(self._model.decoder.num_codebooks)
+        if ids.shape[0] != n_codebooks:
+            ids = ids[:n_codebooks]
+        prompt_frames = int(ids.shape[-1])
+        return ids.reshape(n_codebooks, prompt_frames).to(torch.long), prompt_frames * hop
 
     # ──────────────────────────────────────────────────────────────────────────
     # Progress hook

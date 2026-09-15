@@ -18,7 +18,7 @@ Two ways in:
 | Feature | Detail |
 |---|---|
 | AI model | Meta `facebook/musicgen-small` (text) or `facebook/musicgen-melody` (audio-conditioned) |
-| Output | MP3, 192 kbps, stereo, up to 20 seconds |
+| Output | MP3, 192 kbps, stereo — up to 20 s (describe mode) / 30 s of singing (vocal mode, raisable) |
 | Parameters | Genre, mood, instruments, frequency range, crescendo pattern, guidance scale, temperature |
 | Smart defaults | All optional fields are inferred from the melody description |
 | **Vocal → Music** | Upload a vocal; auto-detect key, tempo, pitch range, phrasing, mood; arrange + synchronise + mix |
@@ -172,9 +172,13 @@ All fields except `melody` are optional.
 Upload a **vocal-only recording** and the app builds music around it, in this flow:
 
 ```
-Upload Vocal → Analyse Vocal → Extract Musical Structure
+Upload Vocal → Find the sung region → Analyse Vocal → Extract Musical Structure
              → Generate Arrangement → Synchronise with Vocal → Preview → Export
 ```
+
+The output starts where your singing starts: a silent count-in at the head of
+the recording is skipped (and reported back as a warning / badge), so the whole
+generation budget goes to the part that has a melody in it.
 
 ### What it detects (`vocal_analysis.py`)
 
@@ -185,18 +189,26 @@ genre, mood, supportive instrument palette and diatonic chord progression.
 
 ### How it arranges & mixes
 
-* **`arrangement.py`** turns the analysis into a plan: a MusicGen prompt that
-  pins the detected key, tempo and chord progression and explicitly asks for an
-  *instrumental accompaniment that leaves space for a solo singer*.
+* **`arrangement.py`** turns the analysis into a plan and a *short* MusicGen
+  caption (genre, instruments, key, tempo, feel, "instrumental"). The melody
+  itself is not described in words — the model hears it directly through the
+  chroma of your vocal. Tempo from a solo voice is octave-folded into a
+  60–140 BPM window because beat trackers routinely report double time for a
+  ballad (152 BPM for a 76 BPM song). Override anything you disagree with.
 * **`generator.py`** (the melody-conditioned `musicgen-melody` model) generates
-  the accompaniment, conditioned on the actual vocal. Longer vocals are handled
-  by **segmented generation** with crossfades.
+  the accompaniment in **one 30 s pass** — MusicGen's native clip length and
+  exactly the span its melody conditioning covers. If you raise the cap above
+  30 s, each further window is generated as an **audio continuation** of the
+  previous one (the last 3 s are fed back as a decoder prompt), so the music
+  stays one piece instead of two unrelated clips crossfaded together.
 * **`vocal_mixer.py`** processes the accompaniment with a vocal-friendly effects
   chain (reusing `effects.py`), **carves EQ space** around the vocal's
   fundamental and presence band so instruments don't mask the voice,
-  **sidechain-ducks** the backing under the vocal, then **synchronises** (trims/
-  pads the accompaniment to the exact vocal length) and mixes the *original*
-  vocal — unchanged — back on top.
+  **level-matches** the two (the vocal is normalised to −18 dBFS RMS over its
+  sung parts and the backing set 3 dB under it — phone recordings are often
+  20 dB quieter than MusicGen output), **sidechain-ducks** the backing under
+  the vocal, then **synchronises** (trims/pads the accompaniment to the exact
+  vocal length) and mixes the *original* vocal performance back on top.
 
 Two files come out of every job: the **full mix** (`?variant=mix`) and the
 **accompaniment only** (`?variant=accompaniment`).
@@ -210,8 +222,12 @@ runtime stays sane:
 
 | Env var | Default | Meaning |
 |---|---|---|
-| `ARK_VOCAL_MAX_SECONDS` | `30` | Max vocal length processed (longer is truncated) |
-| `ARK_VOCAL_SEGMENT_SECONDS` | `15` | Window size for segmented generation |
+| `ARK_VOCAL_MAX_SECONDS` | `30` | Max seconds **of singing** scored (silence before it doesn't count; longer is truncated with a warning) |
+| `ARK_VOCAL_SEGMENT_SECONDS` | `30` | Generation window (≤ 30; only matters when the cap is raised above it) |
+| `ARK_VOCAL_CONTINUATION_SECONDS` | `3` | Audio handed from one window to the next as a continuation prompt |
+| `ARK_VOCAL_SCAN_SECONDS` | `300` | How much of a long upload is scanned for the sung region |
+| `ARK_DEVICE` / `ARK_FORCE_CPU` | cpu | Torch device (`mps` on Apple Silicon, `cuda`); see *Memory matters* below |
+| `ARK_DTYPE` | fp32 (CPU) / fp16 (MPS) | Weight precision; half precision halves the melody model to ~3 GB |
 
 ### CLI
 
@@ -331,16 +347,35 @@ URL format: `https://singalong-ai.azurewebsites.net`
 
 ---
 
-## Time expectations on CPU
+## Time expectations — and why memory matters more than CPU
 
 | Track length | Model | Approximate time |
 |---|---|---|
 | 8 s | musicgen-small | 2 – 4 min |
 | 15 s | musicgen-small | 4 – 8 min |
 | 20 s | musicgen-small | 6 – 12 min |
-| 20 s | musicgen-melody (audio input) | 10 – 20 min |
+| 30 s (vocal mode) | musicgen-melody, weights resident in RAM | see the table in `key_points.txt` |
+| 30 s (vocal mode) | musicgen-melody, weights **paged from disk** | hours to a day — do not run it like this |
 
-The first request downloads and caches the model (~300 MB). Subsequent requests use the cache.
+The first request downloads and caches the model (musicgen-small ≈ 300 MB,
+musicgen-melody ≈ 3 GB). Subsequent requests use the cache.
+
+**`musicgen-melody` is a 1.55 B-parameter model: 6.2 GB of weights in float32,
+3.1 GB in half precision.** MusicGen decodes autoregressively — every one of
+the 1 500 tokens in a 30 s clip touches every weight — so if those weights do
+not fit in free RAM the OS pages them from disk on every step and a generation
+that should take minutes takes a day. This is *not* fixed by more CPU cores.
+Concretely:
+
+* An Azure **B2 plan has 3.5 GB of RAM**: the melody model cannot be resident
+  there at all. Use a plan with ≥ 8 GB (P1v3 or above) and `ARK_DTYPE=bfloat16`,
+  or a GPU host. Text mode with `musicgen-small` (1.2 GB) is fine on B2.
+* On a 16 GB laptop, close the VM / browser tabs before generating, or run on
+  the GPU in half precision (`ARK_DEVICE=mps`, the default precision there is
+  fp16) so only ~3 GB has to be resident.
+* Watch the per-token timing printed by the worker (`Generating accompaniment…
+  12%`): if the ETA reads in hours, the model is swapping — stop and free
+  memory rather than wait.
 
 ---
 
@@ -440,8 +475,12 @@ class StubGen:
 res = run_vocal_to_music(path, generator_factory=lambda: StubGen())
 assert res.mix.shape[0] == 2 and np.isfinite(res.mix).all()
 print("mix shape:", res.mix.shape, "| segments:", res.segments, "| peak:", round(float(np.max(np.abs(res.mix))),3))
+print("window:", res.window_start_sec, "→", res.window_end_sec, "s of", res.source_duration_sec, "s | prompt:", res.plan.prompt)
 print("VOCAL PIPELINE OK")
 EOF
+
+# 5c. Unit tests for the vocal pipeline, queue and worker (no model download)
+pytest -q tests/
 
 # 6. Confirm FastAPI app loads (no model download, just import check)
 python3 -c "import api; print('FastAPI app loaded OK')"

@@ -45,6 +45,8 @@ def _print_analysis(a) -> None:
     tbl.add_column(style="dim", no_wrap=True)
     tbl.add_column(style="cyan")
     tbl.add_row("Duration",   f"{a.duration_sec} s")
+    if a.active_end_sec:
+        tbl.add_row("Singing",    f"{a.active_start_sec}s → {a.active_end_sec}s")
     tbl.add_row("Key / mode", f"{a.key_name}  (confidence {a.key_confidence})")
     tbl.add_row("Tempo",      f"{a.tempo_bpm} BPM")
     tbl.add_row("Pitch range", f"{a.pitch_min_note}–{a.pitch_max_note}  ({a.register})")
@@ -59,8 +61,8 @@ def _print_analysis(a) -> None:
 
 
 def _write_mp3(audio: np.ndarray, sr: int, out_path: Path, bitrate: str = "192k") -> None:
-    """Export a (2, samples) float array to MP3 (reuses api's ffmpeg helper)."""
-    from api import _write_mp3 as write_mp3
+    """Export a (2, samples) float array to MP3 (shared ffmpeg helper)."""
+    from audio_io import write_mp3
     write_mp3(audio, sr, out_path, bitrate=bitrate)
 
 
@@ -145,7 +147,11 @@ def vocalize(
             f"  Key / tempo  : [cyan]{result.plan.key} {result.plan.mode} · "
             f"{int(round(result.plan.tempo_bpm))} BPM[/cyan]\n"
             f"  Genre / mood : [cyan]{result.plan.genre} · {result.plan.mood}[/cyan]\n"
-            f"  Segments     : [cyan]{result.segments}[/cyan]",
+            f"  Source window: [cyan]{result.window_start_sec}s → {result.window_end_sec}s "
+            f"of {result.source_duration_sec}s[/cyan]\n"
+            f"  Prompt       : [dim]{result.plan.prompt}[/dim]\n"
+            f"  Segments     : [cyan]{result.segments}"
+            f"{' (chained by audio continuation)' if result.continuation_used else ''}[/cyan]",
             border_style="green", title="[bold]Output[/bold]",
         )
     )

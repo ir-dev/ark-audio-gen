@@ -84,6 +84,13 @@ app settings update
     WEBSITES_CONTAINER_START_TIME_LIMIT=1800 \
     SCM_COMMAND_IDLE_TIMEOUT=3600 \
     ARK_DATA_DIR=/home/data
+# MEMORY, not CPU, decides whether vocal mode is usable on App Service:
+#   musicgen-melody = 1.55 B params = 6.2 GB fp32 / 3.1 GB bf16 of weights that
+#   every decode step touches.  B2 has 3.5 GB RAM → the model can never be
+#   resident → it pages from disk on all ~1 500 steps → "a day" per track.
+#   Minimum for vocal mode: 8 GB (P1v3) + ARK_DTYPE=bfloat16; comfortable: 16 GB.
+#   Text mode (musicgen-small, 1.2 GB) is fine on B2.
+#   Add to the settings block when on a ≥ 8 GB plan:   ARK_DTYPE=bfloat16
 # ARK_DATA_DIR: persistent root for the job DB + generated tracks + uploads.
 # MUST be under /home and OUTSIDE wwwroot so a `--clean` deploy can't wipe it.
 # startup.sh also defaults it to /home/data, so this is belt-and-suspenders.
@@ -198,6 +205,27 @@ az webapp deploy \
 # Vocal / melody source file (uses the larger musicgen-melody model)
 > python main.py /path/to/melody.wav --genre pop --mood happy --output singalong.mp3
 > python main.py isaiah_54_17.mp3 --genre pop --mood happy --output singalong.mp3
+
+# ── vocal → music locally (the mode that produced ark_vocal_track.mp3) ─────
+# The melody model is 1.55 B params = 6.2 GB in fp32.  On this 16 GB box with a
+# VM + Teams + browser open that does NOT stay resident: the job that sat at
+# "Generating accompaniment 1/2… 16%" for 6.5 h was paging weights from swap
+# (17 GB swap in use).  bf16 halves it to 3.1 GB and is now the default on
+# Apple Silicon (generator._select_dtype).  Measured, musicgen-melody, 30 tokens:
+#   cpu/float32  → swapping, minutes per handful of tokens
+#   cpu/bfloat16 → 0.05 s/token   (30 s clip ≈ 1.5 min incl. load)
+#   mps/bfloat16 → 0.06 s/token
+#   mps/float16  → 0.05 s/token   (fp16 T5 can overflow; prefer bf16)
+# Free memory first (close the VM) or it will still swap.
+
+> python vocalize.py isaiah_54_17.mp3 -o ark_vocal_track_v2.mp3
+#   → ark_vocal_track_v2.mp3 (mix) + ark_vocal_track_v2_accompaniment.mp3
+#   Output starts where the singing starts (this file has a 13 s silent
+#   count-in) and covers the first 30 s of singing (ARK_VOCAL_MAX_SECONDS).
+
+> ARK_DEVICE=mps python vocalize.py isaiah_54_17.mp3 -o ark_vocal_track_v2.mp3   # GPU
+> ARK_DTYPE=float32 python vocalize.py …                                          # force fp32
+> ARK_VOCAL_MAX_SECONDS=60 python vocalize.py …   # 2 × 30 s windows, chained by audio continuation
 
 # ── tuning knobs (all optional) ─────────────────────────────────────
 # This box: 4 performance + 6 efficiency cores. Default uses all 10; pinning

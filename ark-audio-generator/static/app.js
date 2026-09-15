@@ -548,6 +548,8 @@ function renderAnalysis(a) {
     ['Register',   a.register],
     ['Contour',    a.contour],
     ['Phrases',    String(a.phrase_count)],
+    ['Singing',    (a.active_end_sec > 0)
+                     ? `${a.active_start_sec}s → ${a.active_end_sec}s` : '—'],
     ['Chords',     (a.chord_progression || []).join(' · ') || '—'],
     ['Instruments',(a.suggested_instruments || []).join(', ') || '—'],
   ];
@@ -626,6 +628,8 @@ function showVocalResult(jobId, data) {
     (a.chord_progression && a.chord_progression.length)
       ? `🎹 ${a.chord_progression.join(' · ')}` : null,
     data.duration ? `⏱ ${data.duration}s` : null,
+    (Number.isFinite(data.window_start) && data.window_start > 0.5)
+      ? `▶ from ${data.window_start}s of your recording` : null,
   ].filter(Boolean);
   badges.forEach(b => {
     const span = document.createElement('span');

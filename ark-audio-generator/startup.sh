@@ -20,6 +20,8 @@ set -e
 # override can never change behaviour here, and let the decode use every vCPU
 # (was hard-capped at 4 before, leaving most of the SKU idle).
 export ARK_FORCE_CPU=1
+# ARK_DTYPE (app setting) passes through untouched: set it to bfloat16 on a
+# plan with >= 8 GB RAM so the 1.55 B-param melody model stays resident.
 export ARK_NUM_THREADS="${ARK_NUM_THREADS:-$(nproc 2>/dev/null || echo 4)}"
 
 # ── Cache HuggingFace models in Azure persistent storage (/home is persistent)

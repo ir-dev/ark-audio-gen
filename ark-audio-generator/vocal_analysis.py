@@ -90,7 +90,10 @@ class VocalAnalysis:
     # Timing
     duration_sec: float = 0.0
     analysed_sec: float = 0.0          # portion actually analysed (may be capped)
+    active_start_sec: float = 0.0      # where the singing/humming starts (within analysed part)
+    active_end_sec: float = 0.0        # where it ends
     tempo_bpm: float = 100.0
+    tempo_raw_bpm: float = 0.0         # tracker output before octave folding
     time_signature: str = "4/4"
 
     # Tonality
@@ -159,6 +162,57 @@ def _load_mono(source, sr: int, max_seconds: Optional[float]) -> tuple[np.ndarra
         y = y[: int(max_seconds * sr)]
 
     return y.astype(np.float32), sr, full_duration
+
+
+# Sung material almost always sits in this perceived-tempo window.  Beat
+# trackers fed a *solo voice* (no drums, sparse onsets) very often land on a
+# double- or half-time multiple of the real pulse — e.g. 152 BPM for a 76 BPM
+# ballad — so anything outside the window is folded back by octaves.
+TEMPO_MIN_BPM = 60.0
+TEMPO_MAX_BPM = 140.0
+
+
+def fold_tempo(bpm: float, lo: float = TEMPO_MIN_BPM, hi: float = TEMPO_MAX_BPM) -> float:
+    """Fold double-/half-time tracker errors into a plausible sung-tempo range."""
+    try:
+        bpm = float(bpm)
+    except (TypeError, ValueError):
+        return 100.0
+    if not np.isfinite(bpm) or bpm <= 0:
+        return 100.0
+    while bpm > hi:
+        bpm /= 2.0
+    while bpm < lo:
+        bpm *= 2.0
+    return bpm
+
+
+def detect_active_region(
+    y: np.ndarray,
+    sr: int,
+    top_db: float = 30.0,
+    min_sec: float = 0.25,
+) -> tuple[float, float]:
+    """
+    Return ``(start_sec, end_sec)`` of the part of a mono signal that actually
+    contains singing/humming — i.e. from the first to the last non-silent
+    stretch at least ``min_sec`` long.  Falls back to the whole signal when
+    nothing is detected.
+    """
+    y = np.asarray(y, dtype=np.float32)
+    if y.size == 0:
+        return 0.0, 0.0
+    total = len(y) / sr
+    if float(np.max(np.abs(y))) < 1e-4:
+        return 0.0, total
+    try:
+        intervals = librosa.effects.split(y, top_db=top_db)
+    except Exception:
+        return 0.0, total
+    keep = [(s, e) for s, e in intervals if (e - s) / sr >= min_sec]
+    if not keep:
+        return 0.0, total
+    return float(keep[0][0] / sr), float(keep[-1][1] / sr)
 
 
 def _detect_key(chroma_mean: np.ndarray) -> tuple[str, str, float]:
@@ -352,12 +406,23 @@ def analyze_vocal(
         # ── Tempo & beats ─────────────────────────────────────────────────────
         try:
             onset_env = librosa.onset.onset_strength(y=y_trim, sr=sr)
-            tempo, _ = librosa.beat.beat_track(onset_envelope=onset_env, sr=sr)
-            res.tempo_bpm = round(float(np.atleast_1d(tempo)[0]), 1)
+            # start_bpm=90 centres the tracker's prior on song tempi instead of
+            # librosa's 120 default, which pulls sparse vocal onsets upward.
+            tempo, _ = librosa.beat.beat_track(
+                onset_envelope=onset_env, sr=sr, start_bpm=90.0,
+            )
+            raw = float(np.atleast_1d(tempo)[0])
         except Exception:
-            res.tempo_bpm = 100.0
-        if not np.isfinite(res.tempo_bpm) or res.tempo_bpm <= 0:
-            res.tempo_bpm = 100.0
+            raw = 100.0
+        if not np.isfinite(raw) or raw <= 0:
+            raw = 100.0
+        res.tempo_raw_bpm = round(raw, 1)
+        res.tempo_bpm = round(fold_tempo(raw), 1)
+
+        # ── Where the performance actually starts / ends ──────────────────────
+        a_start, a_end = detect_active_region(y, sr)
+        res.active_start_sec = round(a_start, 2)
+        res.active_end_sec = round(a_end, 2)
 
         # ── Key / mode ────────────────────────────────────────────────────────
         try:
@@ -472,4 +537,4 @@ def _build_summary(a: VocalAnalysis) -> str:
     return ", ".join(parts)
 
 
-__all__ = ["VocalAnalysis", "analyze_vocal"]
+__all__ = ["VocalAnalysis", "analyze_vocal", "detect_active_region", "fold_tempo"]

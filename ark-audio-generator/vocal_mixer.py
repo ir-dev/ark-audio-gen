@@ -207,6 +207,74 @@ def process_accompaniment(
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Level matching
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Phone/laptop vocal recordings arrive at wildly different levels (often very
+# quiet), whereas MusicGen output is always peak-normalised.  Summing them as-is
+# buries the singer.  So the vocal is normalised to a healthy RMS over the parts
+# where it is actually singing, and the backing is set *relative* to that.
+VOCAL_TARGET_RMS_DB = -18.0
+BACKING_OFFSET_DB = -3.0          # backing RMS relative to the vocal, before ducking
+
+
+def _voiced_mask(vocal_mono: np.ndarray, sr: int, rel_threshold: float = 0.1) -> np.ndarray:
+    """Boolean per-sample mask of where the vocal is audibly present."""
+    frame = max(int(sr * 0.05), 1)
+    env = np.sqrt(np.convolve(vocal_mono.astype(np.float64) ** 2,
+                              np.ones(frame) / frame, mode="same"))
+    peak = float(env.max())
+    if peak < 1e-6:
+        return np.zeros_like(vocal_mono, dtype=bool)
+    return env > peak * rel_threshold
+
+
+def rms_db(x: np.ndarray, mask: np.ndarray | None = None) -> float:
+    """RMS level in dBFS of a mono/stereo array, optionally over a sample mask."""
+    x = np.asarray(x, dtype=np.float64)
+    mono = x.mean(axis=0) if x.ndim == 2 else x
+    if mask is not None and mask.any():
+        mono = mono[mask[: mono.shape[-1]]]
+    if mono.size == 0:
+        return -120.0
+    r = float(np.sqrt(np.mean(mono ** 2)))
+    return 20.0 * np.log10(max(r, 1e-9))
+
+
+def match_levels(
+    vocal: np.ndarray,
+    accompaniment: np.ndarray,
+    sr: int,
+    vocal_target_db: float = VOCAL_TARGET_RMS_DB,
+    backing_offset_db: float = BACKING_OFFSET_DB,
+) -> tuple[np.ndarray, np.ndarray, dict]:
+    """
+    Return ``(vocal, accompaniment, info)`` with the vocal normalised to
+    ``vocal_target_db`` RMS over its voiced parts and the accompaniment set to
+    ``vocal_target_db + backing_offset_db`` RMS over those same parts.
+    """
+    voc = _to_stereo(vocal)
+    acc = _to_stereo(accompaniment)
+    mask = _voiced_mask(voc.mean(axis=0), sr)
+
+    v_db = rms_db(voc, mask)
+    v_gain_db = float(np.clip(vocal_target_db - v_db, -24.0, 40.0)) if v_db > -100 else 0.0
+    voc = voc * (10 ** (v_gain_db / 20.0))
+
+    a_db = rms_db(acc, mask if mask.any() else None)
+    a_target = vocal_target_db + backing_offset_db
+    a_gain_db = float(np.clip(a_target - a_db, -40.0, 24.0)) if a_db > -100 else 0.0
+    acc = acc * (10 ** (a_gain_db / 20.0))
+
+    info = {
+        "vocal_rms_db_in": round(v_db, 1), "vocal_gain_db": round(v_gain_db, 1),
+        "backing_rms_db_in": round(a_db, 1), "backing_gain_db": round(a_gain_db, 1),
+        "voiced_ratio": round(float(mask.mean()) if mask.size else 0.0, 3),
+    }
+    return voc.astype(np.float32), acc.astype(np.float32), info
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Synchronise & mix
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -214,22 +282,29 @@ def mix_vocal_over_accompaniment(
     vocal: np.ndarray,
     accompaniment: np.ndarray,
     sr: int,
-    accompaniment_gain_db: float = -3.0,
+    accompaniment_gain_db: float = 0.0,
     vocal_gain_db: float = 0.0,
     duck_depth_db: float = 6.0,
+    level_match: bool = True,
 ) -> np.ndarray:
     """
     Synchronise and mix the original vocal on top of the accompaniment.
 
     The accompaniment is trimmed/padded to the exact length of the vocal so the
-    two stay aligned from start to finish; the vocal is preserved unchanged
-    apart from an optional level trim.  Returns a normalised (2, samples) mix.
+    two stay aligned from start to finish.  With ``level_match`` (default) the
+    vocal is normalised and the backing is placed a few dB under it before the
+    sidechain duck; the two ``*_gain_db`` arguments are trims on top of that.
+    The vocal's *performance* is untouched — only its overall level changes.
+    Returns a (2, samples) mix peaking below 0 dBFS.
     """
     voc = _to_stereo(vocal)
     acc = _to_stereo(accompaniment)
 
     n = voc.shape[-1]
     acc = _fit_length(acc, n)
+
+    if level_match:
+        voc, acc, _ = match_levels(voc, acc, sr)
 
     vocal_mono = voc.mean(axis=0)
     acc = sidechain_duck(acc, vocal_mono, sr, duck_depth_db=duck_depth_db)
@@ -241,8 +316,8 @@ def mix_vocal_over_accompaniment(
 
     # Prevent clipping while preserving relative balance.
     peak = float(np.max(np.abs(mix)))
-    if peak > 0.99:
-        mix = mix * (0.99 / peak)
+    if peak > 0.97:
+        mix = mix * (0.97 / peak)
     return mix.astype(np.float32)
 
 
@@ -250,5 +325,7 @@ __all__ = [
     "carve_vocal_band",
     "sidechain_duck",
     "process_accompaniment",
+    "match_levels",
+    "rms_db",
     "mix_vocal_over_accompaniment",
 ]
