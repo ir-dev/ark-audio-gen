@@ -1,0 +1,158 @@
+{
+  "schemaVersion": "1.0",
+  "requestId": "4cd3bcb8-c0f9-4860-8666-c622c9c1fe67",
+  "status": "NO_INTENT",
+  "audio": {
+    "durationMs": 4994,
+    "sampleRate": 16000,
+    "rmsDbfs": -16.63,
+    "peakDbfs": -5.62,
+    "clippingRatio": 0.0,
+    "estimatedSnrDb": 19.44,
+    "speechRatio": 0.86,
+    "dcOffset": 0.0,
+    "issues": [],
+    "verdict": "OK"
+  },
+  "speechSegments": [
+    {
+      "startMs": 70,
+      "endMs": 4994
+    }
+  ],
+  "language": {
+    "code": "ta",
+    "confidence": 0.9968989,
+    "alternatives": [
+      {
+        "code": "kn",
+        "probability": 7.9433515E-4
+      },
+      {
+        "code": "ml",
+        "probability": 5.971834E-4
+      },
+      {
+        "code": "gu",
+        "probability": 3.2735843E-4
+      },
+      {
+        "code": "te",
+        "probability": 1.615465E-4
+      },
+      {
+        "code": "bn",
+        "probability": 1.546028E-4
+      }
+    ],
+    "perSegment": [
+      {
+        "startMs": 70,
+        "endMs": 4994,
+        "code": "ta",
+        "probability": 0.9968989
+      }
+    ],
+    "timeShare": {
+      "ta": 1.0
+    },
+    "isCodeMixed": false,
+    "uncertain": false,
+    "supported": true,
+    "source": "AUTO",
+    "engine": "ort-anuvani-lid",
+    "durationMs": 4924
+  },
+  "transcript": {
+    "text": "காந்தி சாலைப் பெருந்து நிருத்்தம் அருகில் தண்ணீர் வசதி பிரச்சனையஉள்ளது இது அவசரம்",
+    "language": "ta",
+    "segments": [
+      {
+        "startMs": 70,
+        "endMs": 4994,
+        "text": "காந்தி சாலைப் பெருந்து நிருத்்தம் அருகில் தண்ணீர் வசதி பிரச்சனையஉள்ளது இது அவசரம்"
+      }
+    ],
+    "confidence": 1.0,
+    "confidenceSource": "heuristic",
+    "modelId": "omnilingual-300m-ctc-int8",
+    "engine": "sherpa-omnilingual-ctc",
+    "script": "Tamil",
+    "edited": false
+  },
+  "intent": {
+    "status": "NO_MATCH",
+    "alternatives": [],
+    "confidence": 0.0,
+    "engine": "lexical-v1"
+  },
+  "fields": {},
+  "missingRequired": [],
+  "clarifications": [],
+  "warnings": [],
+  "processing": {
+    "startedAt": "2026-11-08T04:33:21.450692Z",
+    "totalMs": 2113,
+    "stages": [
+      {
+        "stage": "validate",
+        "ms": 2,
+        "status": "OK"
+      },
+      {
+        "stage": "vad",
+        "ms": 54,
+        "status": "OK",
+        "detail": "1 segments, 4924 ms speech"
+      },
+      {
+        "stage": "lid",
+        "ms": 329,
+        "status": "OK",
+        "detail": "ta 1.00"
+      },
+      {
+        "stage": "route",
+        "ms": 18,
+        "status": "OK",
+        "detail": "omnilingual-300m-ctc-int8"
+      },
+      {
+        "stage": "asr",
+        "ms": 1691,
+        "status": "OK",
+        "detail": "81 chars, conf 1.00"
+      },
+      {
+        "stage": "intent",
+        "ms": 3,
+        "status": "NO_MATCH"
+      }
+    ],
+    "vadEngine": "sherpa-silero-vad",
+    "lidEngine": "ort-anuvani-lid",
+    "asrEngine": "sherpa-omnilingual-ctc",
+    "asrModelId": "omnilingual-300m-ctc-int8",
+    "nluEngine": "lexical-v1+rules-v1",
+    "device": {
+      "manufacturer": "Google",
+      "model": "sdk_gphone64_arm64",
+      "sdk": "36",
+      "abi": "arm64-v8a",
+      "cores": "4",
+      "totalRamMb": "3916",
+      "availRamMb": "1964",
+      "lowRamDevice": "false",
+      "memoryClassMb": "192",
+      "largeMemoryClassMb": "576",
+      "emulator": "true"
+    }
+  },
+  "retention": {
+    "consentToRetainAudio": false,
+    "consentToRetainTranscript": false,
+    "audioRetained": false,
+    "transcriptRetained": false,
+    "processedOnDevice": true
+  }
+}

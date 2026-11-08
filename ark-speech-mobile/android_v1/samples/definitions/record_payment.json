@@ -1,0 +1,67 @@
+{
+  "id": "record_payment",
+  "intent": { "name": "record_payment", "description": "Record that a payment was made" },
+  "version": 1,
+  "enabled": true,
+  "languages": ["en", "hi", "ta", "te", "kn", "bn"],
+  "triggers": {
+    "phrases": {
+      "en": ["payment", "paid", "pay", "sent money", "transferred", "record a payment"],
+      "hi": ["भुगतान", "पैसे भेजे", "रुपये भेजे", "भेजे", "दिए", "पेमेंट", "payment"],
+      "ta": ["பணம்", "செலுத்தினேன்", "அனுப்பினேன்", "பேமெண்ட்", "கொடுத்தேன்"],
+      "te": ["చెల్లింపు", "డబ్బు", "పంపాను", "చెల్లించాను"],
+      "kn": ["ಪಾವತಿ", "ಹಣ", "ಕಳುಹಿಸಿದೆ"],
+      "bn": ["টাকা পাঠানো", "পেমেন্ট", "টাকা", "পাঠানো হয়েছে"]
+    },
+    "negativePhrases": { "en": ["refund", "cancel"], "hi": ["रिफंड", "वापस"] }
+  },
+  "fields": [
+    { "name": "amount", "description": "Amount paid", "type": "AMOUNT", "required": true, "validation": { "min": 1, "max": 10000000 } },
+    {
+      "name": "payee",
+      "description": "Who was paid",
+      "type": "STRING",
+      "required": true,
+      "extraction": {
+        "anchors": { "en": ["to", "paid"] },
+        "anchorsBefore": { "hi": ["को"], "bn": ["কে"] },
+        "stopWords": { "en": ["by", "on", "via", "through", "for"], "hi": ["दो", "पाँच", "रुपये"] },
+        "maxTokens": 2,
+        "instructions": "In Hindi the payee precedes को. Tamil and Telugu fuse the dative suffix, so the payee is usually asked for."
+      }
+    },
+    { "name": "payment_date", "description": "Date of payment", "type": "DATE", "required": false, "extraction": { "temporalDirection": "PAST" } },
+    {
+      "name": "payment_mode",
+      "description": "How it was paid",
+      "type": "ENUM",
+      "required": false,
+      "validation": {
+        "allowedValues": [
+          { "value": "cash", "synonyms": { "en": ["cash"], "hi": ["नकद", "कैश", "cash"], "ta": ["ரொக்கம்", "பணமாக"], "te": ["నగదు"], "kn": ["ನಗದು"], "bn": ["নগদ"] } },
+          { "value": "upi", "synonyms": { "en": ["upi", "phonepe", "gpay", "google pay", "paytm", "bhim"], "hi": ["यूपीआई", "फोनपे", "गूगल पे", "पेटीएम", "upi"], "ta": ["யூபிஐ", "ஜிபே"], "te": ["యూపీఐ"], "kn": ["ಯುಪಿಐ"], "bn": ["ইউপিআই"] } },
+          { "value": "card", "synonyms": { "en": ["card", "credit card", "debit card"], "hi": ["कार्ड"], "ta": ["அட்டை", "கார்டு"], "te": ["కార్డు"], "kn": ["ಕಾರ್ಡ್"], "bn": ["কার্ড"] } },
+          { "value": "bank", "synonyms": { "en": ["bank transfer", "neft", "imps", "rtgs", "net banking"], "hi": ["बैंक", "नेफ्ट", "ट्रांसफर"], "ta": ["வங்கி"], "te": ["బ్యాంకు"], "kn": ["ಬ್ಯಾಂಕ್"], "bn": ["ব্যাংক"] } }
+        ]
+      }
+    },
+    {
+      "name": "reference",
+      "description": "Transaction reference",
+      "type": "STRING",
+      "required": false,
+      "validation": { "regex": "^[A-Za-z0-9]{6,}$" },
+      "extraction": { "patterns": ["(?i)(?:ref(?:erence)?|utr|txn|transaction)\\s*(?:no|number|id)?\\s*(?<value>[A-Za-z0-9]{6,})"] }
+    }
+  ],
+  "confidenceThreshold": 0.5,
+  "fallback": "ASK_USER",
+  "examples": [
+    { "language": "en", "text": "Record a payment of two thousand five hundred rupees to Ramesh by UPI on the fifth of November.", "expected": { "amount": "2500", "payee": "Ramesh", "payment_mode": "upi" } },
+    { "language": "hi", "text": "रमेश को दो हज़ार पाँच सौ रुपये यूपीआई से भेजे हैं, पाँच नवंबर को।", "expected": { "amount": "2500", "payee": "रमेश", "payment_mode": "upi" } },
+    { "language": "bn", "text": "রমেশকে পাঁচই নভেম্বর ইউপিআই-এর মাধ্যমে দুই হাজার পাঁচশো টাকা পাঠানো হয়েছে।", "expected": { "amount": "2500", "payment_mode": "upi" }, "note": "payee is fused with the case suffix (রমেশকে) and is asked for" }
+  ],
+  "instructions": "Field-agent payment log. Amount and payee are mandatory.",
+  "updatedBy": "sample",
+  "changeNote": "Initial sample"
+}

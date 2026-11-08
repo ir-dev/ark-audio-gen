@@ -1,0 +1,9 @@
+{
+  "defaultModelId": "omnilingual-300m-ctc-int8",
+  "byLanguage": {},
+  "fallbackModelIds": [
+    "whisper-small-int8",
+    "whisper-tiny-int8"
+  ],
+  "_note": "No per-language override by default. Measured 2026-11-08 on synthetic clips: Omnilingual 300M CTC writes Hindi in Devanagari in 2 of 5 clips and in Urdu script in 3 (no language hint possible); Whisper small int8 (sherpa-onnx) keeps Devanagari but stopped decoding after ~3 s of Hindi speech in every clip, so it is not routed here. A deployment that installs an IndicConformer pack adds e.g. \"hi\": \"indicconformer-hi-int8\"."
+}

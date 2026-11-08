@@ -1,0 +1,67 @@
+{
+  "id": "stock_update",
+  "intent": { "name": "stock_update", "description": "Add or remove inventory" },
+  "version": 1,
+  "enabled": true,
+  "languages": [],
+  "triggers": {
+    "phrases": {
+      "en": ["add stock", "stock", "inventory", "received", "add", "remove", "sold"],
+      "hi": ["स्टॉक", "जोड़ो", "जोड़ें", "निकालो", "माल आया", "बेचा"],
+      "ta": ["ஸ்டாக்", "இருப்பு", "சேர்", "எடு", "விற்றேன்"],
+      "te": ["స్టాక్", "చేర్చు", "తీసివేయి", "అమ్మాను"],
+      "kn": ["ಸ್ಟಾಕ್", "ಸೇರಿಸಿ", "ತೆಗೆ", "ಮಾರಿದೆ"],
+      "bn": ["স্টক", "যোগ", "সরান"]
+    }
+  },
+  "fields": [
+    {
+      "name": "action",
+      "description": "Add or remove",
+      "type": "ENUM",
+      "required": true,
+      "validation": {
+        "allowedValues": [
+          { "value": "add", "synonyms": { "en": ["add", "received", "add stock", "came in"], "hi": ["जोड़ो", "जोड़ें", "आया", "डालो"], "ta": ["சேர்", "சேர்க்க", "வந்தது"], "te": ["చేర్చు", "వచ్చింది"], "kn": ["ಸೇರಿಸಿ", "ಬಂದಿದೆ"], "bn": ["যোগ", "এসেছে"] } },
+          { "value": "remove", "synonyms": { "en": ["remove", "sold", "issued", "take out"], "hi": ["निकालो", "बेचा", "घटाओ"], "ta": ["எடு", "விற்றேன்", "குறை"], "te": ["తీసివేయి", "అమ్మాను"], "kn": ["ತೆಗೆ", "ಮಾರಿದೆ"], "bn": ["সরান", "বিক্রি"] } }
+        ]
+      }
+    },
+    { "name": "quantity", "description": "Quantity", "type": "NUMBER", "required": true, "validation": { "min": 0 } },
+    {
+      "name": "unit",
+      "description": "Unit",
+      "type": "ENUM",
+      "required": false,
+      "validation": {
+        "allowedValues": [
+          { "value": "kg", "synonyms": { "en": ["kilo", "kilos", "kg", "kilogram", "kilograms"], "hi": ["किलो", "केजी"], "ta": ["கிலோ"], "te": ["కిలో", "కిలోలు"], "kn": ["ಕಿಲೋ", "ಕೆಜಿ"], "bn": ["কেজি", "কিলো"] } },
+          { "value": "litre", "synonyms": { "en": ["litre", "liter", "litres", "liters"], "hi": ["लीटर"], "ta": ["லிட்டர்"], "te": ["లీటర్", "లీటర్లు"], "kn": ["ಲೀಟರ್"], "bn": ["লিটার"] } },
+          { "value": "piece", "synonyms": { "en": ["piece", "pieces", "pcs", "units"], "hi": ["नग", "पीस"], "ta": ["துண்டு", "பீஸ்"], "te": ["ముక్కలు"], "kn": ["ಪೀಸ್"], "bn": ["পিস", "টি"] } },
+          { "value": "bag", "synonyms": { "en": ["bag", "bags", "sack", "sacks"], "hi": ["बोरी", "बैग", "बोरे"], "ta": ["மூட்டை", "பை"], "te": ["బస్తా", "బస్తాలు"], "kn": ["ಚೀಲ", "ಮೂಟೆ"], "bn": ["বস্তা", "ব্যাগ"] } }
+        ]
+      }
+    },
+    {
+      "name": "item",
+      "description": "Item name",
+      "type": "STRING",
+      "required": true,
+      "extraction": {
+        "anchors": { "en": ["kilo", "kilos", "kg", "litres", "litre", "bags", "bag", "pieces", "of"], "hi": ["किलो", "लीटर", "बोरी", "नग"], "ta": ["கிலோ", "லிட்டர்", "மூட்டை"], "te": ["కిలో", "లీటర్", "బస్తా"], "kn": ["ಕಿಲೋ", "ಲೀಟರ್", "ಚೀಲ"], "bn": ["কেজি", "লিটার", "বস্তা"] },
+        "stopWords": { "en": ["to", "in", "into", "from"], "hi": ["जोड़ो", "जोड़ें", "निकालो", "गोदाम", "में"], "ta": ["சேர்", "எடு"], "te": ["చేర్చు", "తీసివేయి"], "kn": ["ಸೇರಿಸಿ", "ತೆಗೆ", "ಗೋದಾಮಿಗೆ"], "bn": ["যোগ", "সরান"] },
+        "maxTokens": 2
+      }
+    }
+  ],
+  "confidenceThreshold": 0.5,
+  "fallback": "ASK_USER",
+  "examples": [
+    { "language": "en", "text": "Add fifty kilos of rice to the warehouse.", "expected": { "action": "add", "quantity": "50", "unit": "kg", "item": "rice" } },
+    { "language": "kn", "text": "ಗೋದಾಮಿಗೆ ಐವತ್ತು ಕಿಲೋ ಅಕ್ಕಿ ಸೇರಿಸಿ.", "expected": { "action": "add", "quantity": "50", "unit": "kg", "item": "ಅಕ್ಕಿ" } },
+    { "language": "hi", "text": "गोदाम में पचास किलो चावल जोड़ो", "expected": { "action": "add", "quantity": "50", "unit": "kg", "item": "चावल" } }
+  ],
+  "instructions": "Warehouse stock movements.",
+  "updatedBy": "sample",
+  "changeNote": "Initial sample"
+}

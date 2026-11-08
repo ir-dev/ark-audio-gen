@@ -1,0 +1,113 @@
+--------- beginning of main
+11-08 10:26:17.110 11851 11865 I AnuvaniLidTest: en_appointment.wav -> en 0.73 uncertain=false alt=[LanguageScore(code=hi, probability=0.22099963), LanguageScore(code=mni, probability=0.00774847)] OK
+11-08 10:26:17.110 11851 11865 I AnuvaniLidTest: en_payment.wav -> gu 0.59 uncertain=true alt=[LanguageScore(code=te, probability=0.23665555), LanguageScore(code=en, probability=0.124987915)] MISS
+11-08 10:26:17.110 11851 11865 I AnuvaniLidTest: en_issue.wav -> gu 0.56 uncertain=true alt=[LanguageScore(code=en, probability=0.15157628), LanguageScore(code=te, probability=0.13074103)] MISS
+11-08 10:26:17.110 11851 11865 I AnuvaniLidTest: hi_appointment.wav -> hi 0.90 uncertain=false alt=[LanguageScore(code=gu, probability=0.039599013), LanguageScore(code=ur, probability=0.033529833)] OK
+11-08 10:26:17.110 11851 11865 I AnuvaniLidTest: hi_payment.wav -> hi 0.96 uncertain=false alt=[LanguageScore(code=gu, probability=0.015641622), LanguageScore(code=ur, probability=0.008619481)] OK
+11-08 10:26:17.110 11851 11865 I AnuvaniLidTest: hi_issue.wav -> hi 0.66 uncertain=false alt=[LanguageScore(code=gu, probability=0.19637387), LanguageScore(code=ur, probability=0.07884813)] OK
+11-08 10:26:17.110 11851 11865 I AnuvaniLidTest: hi_appointment_noisy.wav -> hi 0.96 uncertain=false alt=[LanguageScore(code=ur, probability=0.027926376), LanguageScore(code=gu, probability=0.003355916)] OK
+11-08 10:26:17.110 11851 11865 I AnuvaniLidTest: ta_appointment.wav -> ta 0.99 uncertain=false alt=[LanguageScore(code=kn, probability=9.734502E-4), LanguageScore(code=gu, probability=8.3549874E-4)] OK
+11-08 10:26:17.110 11851 11865 I AnuvaniLidTest: ta_issue.wav -> ta 1.00 uncertain=false alt=[LanguageScore(code=kn, probability=7.133799E-4), LanguageScore(code=ml, probability=6.200411E-4)] OK
+11-08 10:26:17.110 11851 11865 I AnuvaniLidTest: te_appointment.wav -> te 0.99 uncertain=false alt=[LanguageScore(code=hi, probability=0.0012858126), LanguageScore(code=gu, probability=9.444609E-4)] OK
+11-08 10:26:17.110 11851 11865 I AnuvaniLidTest: kn_stock.wav -> kn 1.00 uncertain=false alt=[LanguageScore(code=hi, probability=3.946778E-4), LanguageScore(code=te, probability=3.717159E-4)] OK
+11-08 10:26:17.110 11851 11865 I AnuvaniLidTest: bn_payment.wav -> bn 0.99 uncertain=false alt=[LanguageScore(code=ml, probability=8.420495E-4), LanguageScore(code=ta, probability=6.915833E-4)] OK
+11-08 10:26:17.575 11851 11865 I AnuvaniLidTest: noise top3=[LanguageScore(code=en, probability=0.59122205), LanguageScore(code=bn, probability=0.09291479), LanguageScore(code=doi, probability=0.045339383)]
+11-08 10:26:18.212 11851 11865 I AnuvaniLidTest: hi_appointment top3=[LanguageScore(code=hi, probability=0.89857256), LanguageScore(code=gu, probability=0.039599), LanguageScore(code=ur, probability=0.033529826)]
+11-08 10:26:33.274 11851 11865 I PipelineE2ETest: en_appointment.wav: status=NEEDS_CLARIFICATION lang=en(0.73) intent=book_appointment(0.65) fields=doctor_name=sharmafor/EXTR, appointment_date=-/MISS, appointment_time=10:00/EXTR, phone=9876543210/EXTR, department=-/MISS asr=1438ms text='book and appointment with dr sharmafor to-morrow at ten in the morning my phone '
+11-08 10:26:33.274 11851 11865 I PipelineE2ETest: en_payment.wav: status=NEEDS_CLARIFICATION lang=gu(0.59) intent=record_payment(0.65) fields=amount=2500/LOW_, payee=remich/EXTR, payment_date=2026-11-05/EXTR, payment_mode=upi/EXTR, reference=-/MISS asr=286ms text='record pimorshamul payment of two thousand five hundred repeats to remich by upi'
+11-08 10:26:33.274 11851 11865 I PipelineE2ETest: en_issue.wav: status=NEEDS_CLARIFICATION lang=gu(0.56) intent=stock_update(0.46) fields=action=-/MISS, quantity=-/MISS, unit=-/MISS, item=-/MISS asr=242ms text='आयवा टो रिपोरट  वाटर सपलाई प्रोबलम नियर गानधी रोड बास स्टॉप इत इस रजंट'
+11-08 10:26:33.274 11851 11865 I PipelineE2ETest: hi_appointment.wav: status=NO_INTENT lang=hi(0.90) intent=null(0.00) fields= asr=3352ms text='उजी कल सुबहेदस भजे ड़वक् मेरा फों नमबर नुब आद साथ'
+11-08 10:26:33.274 11851 11865 I PipelineE2ETest: hi_payment.wav: status=NO_INTENT lang=hi(0.96) intent=null(0.00) fields= asr=1058ms text='रमेश को 2500 रूपे योपी आई से भे'
+11-08 10:26:33.274 11851 11865 I PipelineE2ETest: hi_issue.wav: status=NO_INTENT lang=hi(0.66) intent=null(0.00) fields= asr=1309ms text='गान्ती रो के पास पानी की सपलाई की समस'
+11-08 10:26:33.274 11851 11865 I PipelineE2ETest: hi_codemix.wav: status=NO_INTENT lang=hi(0.65) intent=null(0.00) fields= asr=949ms text='मुछी ड़टर शर्मा के साथ कल अ'
+11-08 10:26:33.274 11851 11865 I PipelineE2ETest: hi_appointment_noisy.wav: status=NO_INTENT lang=hi(0.96) intent=null(0.00) fields= asr=2087ms text='मुषीकल सुवेधदस भाजीर दो मेरे पुं नबर नोगा चाच आप'
+11-08 10:26:33.274 11851 11865 I PipelineE2ETest: ta_appointment.wav: status=NEEDS_CLARIFICATION lang=ta(0.99) intent=book_appointment(0.81) fields=doctor_name=குமாருடன்/EXTR, appointment_date=-/MISS, appointment_time=-/MISS, phone=-/MISS, department=-/MISS asr=998ms text='நாளைக் காலைப்பத்து மணிக்கு டாக்டர் குமாருடன் அப்பாயன்டமென்ட் புக் செய்யவேண்டும்'
+11-08 10:26:33.274 11851 11865 I PipelineE2ETest: ta_issue.wav: status=OK lang=ta(1.00) intent=report_issue(0.65) fields=issue_type=water/EXTR, location=காந்தி சாலைப பெருந்து நீடுத்தம்/EXTR, severity=high/EXTR, contact_phone=-/MISS asr=258ms text='காந்தி சாலைப பெருந்து நீடுத்தம் அருகில் தண்ணீர் வசதி பிறச்சனை உள்ளது இது அவசரம்'
+11-08 10:26:33.274 11851 11865 I PipelineE2ETest: te_appointment.wav: status=OK lang=te(0.99) intent=book_appointment(0.85) fields=doctor_name=-/MISS, appointment_date=2026-11-09/EXTR, appointment_time=10:00/EXTR, phone=-/MISS, department=-/MISS asr=243ms text='రేపు ఉదయం పది గంటలకు డాక్ర్ రాబుతో అపాయింట్మెంట్ బుక్ చేయాలి'
+11-08 10:26:33.274 11851 11865 I PipelineE2ETest: kn_stock.wav: status=NO_INTENT lang=kn(1.00) intent=null(0.00) fields= asr=142ms text='گودامگے ائیوتو کیلو اکی سیریسین'
+11-08 10:26:33.274 11851 11865 I PipelineE2ETest: bn_payment.wav: status=NO_INTENT lang=bn(0.99) intent=null(0.00) fields= asr=295ms text='্রমিশকে পানভেমবর উপি আয়ের মাধমে দুয়ে হাজার পাঁচশতাকা পাথানও হয়েছে'
+11-08 10:26:33.284 11851 11865 E TestRunner: failed: multilingualClipsProduceTranscriptsAndIntents(co.immanuel.arkspeech.PipelineE2ETest)
+11-08 10:26:33.285 11851 11865 E TestRunner: ----- begin exception -----
+11-08 10:26:33.285 11851 11865 E TestRunner: java.lang.AssertionError: intent hits 5/13
+11-08 10:26:33.285 11851 11865 E TestRunner: en_appointment.wav: status=NEEDS_CLARIFICATION lang=en(0.73) intent=book_appointment(0.65) fields=doctor_name=sharmafor/EXTR, appointment_date=-/MISS, appointment_time=10:00/EXTR, phone=9876543210/EXTR, department=-/MISS asr=1438ms text='book and appointment with dr sharmafor to-morrow at ten in the morning my phone '
+11-08 10:26:33.285 11851 11865 E TestRunner: en_payment.wav: status=NEEDS_CLARIFICATION lang=gu(0.59) intent=record_payment(0.65) fields=amount=2500/LOW_, payee=remich/EXTR, payment_date=2026-11-05/EXTR, payment_mode=upi/EXTR, reference=-/MISS asr=286ms text='record pimorshamul payment of two thousand five hundred repeats to remich by upi'
+11-08 10:26:33.285 11851 11865 E TestRunner: en_issue.wav: status=NEEDS_CLARIFICATION lang=gu(0.56) intent=stock_update(0.46) fields=action=-/MISS, quantity=-/MISS, unit=-/MISS, item=-/MISS asr=242ms text='आयवा टो रिपोरट  वाटर सपलाई प्रोबलम नियर गानधी रोड बास स्टॉप इत इस रजंट'
+11-08 10:26:33.285 11851 11865 E TestRunner: hi_appointment.wav: status=NO_INTENT lang=hi(0.90) intent=null(0.00) fields= asr=3352ms text='उजी कल सुबहेदस भजे ड़वक् मेरा फों नमबर नुब आद साथ'
+11-08 10:26:33.285 11851 11865 E TestRunner: hi_payment.wav: status=NO_INTENT lang=hi(0.96) intent=null(0.00) fields= asr=1058ms text='रमेश को 2500 रूपे योपी आई से भे'
+11-08 10:26:33.285 11851 11865 E TestRunner: hi_issue.wav: status=NO_INTENT lang=hi(0.66) intent=null(0.00) fields= asr=1309ms text='गान्ती रो के पास पानी की सपलाई की समस'
+11-08 10:26:33.285 11851 11865 E TestRunner: hi_codemix.wav: status=NO_INTENT lang=hi(0.65) intent=null(0.00) fields= asr=949ms text='मुछी ड़टर शर्मा के साथ कल अ'
+11-08 10:26:33.285 11851 11865 E TestRunner: hi_appointment_noisy.wav: status=NO_INTENT lang=hi(0.96) intent=null(0.00) fields= asr=2087ms text='मुषीकल सुवेधदस भाजीर दो मेरे पुं नबर नोगा चाच आप'
+11-08 10:26:33.285 11851 11865 E TestRunner: ta_appointment.wav: status=NEEDS_CLARIFICATION lang=ta(0.99) intent=book_appointment(0.81) fields=doctor_name=குமாருடன்/EXTR, appointment_date=-/MISS, appointment_time=-/MISS, phone=-/MISS, department=-/MISS asr=998ms text='நாளைக் காலைப்பத்து மணிக்கு டாக்டர் குமாருடன் அப்பாயன்டமென்ட் புக் செய்யவேண்டும்'
+11-08 10:26:33.285 11851 11865 E TestRunner: ta_issue.wav: status=OK lang=ta(1.00) intent=report_issue(0.65) fields=issue_type=water/EXTR, location=காந்தி சாலைப பெருந்து நீடுத்தம்/EXTR, severity=high/EXTR, contact_phone=-/MISS asr=258ms text='காந்தி சாலைப பெருந்து நீடுத்தம் அருகில் தண்ணீர் வசதி பிறச்சனை உள்ளது இது அவசரம்'
+11-08 10:26:33.285 11851 11865 E TestRunner: te_appointment.wav: status=OK lang=te(0.99) intent=book_appointment(0.85) fields=doctor_name=-/MISS, appointment_date=2026-11-09/EXTR, appointment_time=10:00/EXTR, phone=-/MISS, department=-/MISS asr=243ms text='రేపు ఉదయం పది గంటలకు డాక్ర్ రాబుతో అపాయింట్మెంట్ బుక్ చేయాలి'
+11-08 10:26:33.285 11851 11865 E TestRunner: kn_stock.wav: status=NO_INTENT lang=kn(1.00) intent=null(0.00) fields= asr=142ms text='گودامگے ائیوتو کیلو اکی سیریسین'
+11-08 10:26:33.285 11851 11865 E TestRunner: bn_payment.wav: status=NO_INTENT lang=bn(0.99) intent=null(0.00) fields= asr=295ms text='্রমিশকে পানভেমবর উপি আয়ের মাধমে দুয়ে হাজার পাঁচশতাকা পাথানও হয়েছে'
+11-08 10:26:33.285 11851 11865 E TestRunner: 
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.Assert.fail(Assert.java:89)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.Assert.assertTrue(Assert.java:42)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at co.immanuel.arkspeech.PipelineE2ETest$multilingualClipsProduceTranscriptsAndIntents$1.invokeSuspend(PipelineE2ETest.kt:61)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source:1)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source:1)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at co.immanuel.arkspeech.PipelineE2ETest.multilingualClipsProduceTranscriptsAndIntents(PipelineE2ETest.kt:38)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at java.lang.reflect.Method.invoke(Native Method)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at androidx.test.internal.runner.junit4.statement.RunBefores.evaluate(RunBefores.java:80)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at androidx.test.ext.junit.runners.AndroidJUnit4.run(AndroidJUnit4.java:162)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.runners.Suite.runChild(Suite.java:128)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.runners.Suite.runChild(Suite.java:27)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.runner.JUnitCore.run(JUnitCore.java:137)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at org.junit.runner.JUnitCore.run(JUnitCore.java:115)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at androidx.test.internal.runner.TestExecutor.execute(TestExecutor.java:68)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at androidx.test.internal.runner.TestExecutor.execute(TestExecutor.java:59)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at androidx.test.runner.AndroidJUnitRunner.onStart(AndroidJUnitRunner.java:467)
+11-08 10:26:33.285 11851 11865 E TestRunner: 	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2627)
+11-08 10:26:33.285 11851 11865 E TestRunner: ----- end exception -----
+11-08 10:26:36.114 11851 11865 I Benchmark: en_appointment.wav #0 cold total=2213ms rtf=0.25 peakPss=919MB cpu=4380ms stages=validate:5, vad:42, lid:875, route:1, asr:1278, intent:0, extract:3
+11-08 10:26:36.877 11851 11865 I Benchmark: en_appointment.wav #1 warm total=716ms rtf=0.08 peakPss=1045MB cpu=2611ms stages=validate:3, vad:44, lid:154, route:1, asr:507, intent:0, extract:1
+11-08 10:26:37.657 11851 11865 I Benchmark: en_appointment.wav #2 warm total=734ms rtf=0.08 peakPss=1048MB cpu=2700ms stages=validate:3, vad:55, lid:157, route:1, asr:509, intent:0, extract:3
+11-08 10:26:41.142 11851 11865 I Benchmark: hi_appointment.wav #0 warm total=3471ms rtf=0.39 peakPss=1182MB cpu=10074ms stages=validate:3, vad:46, lid:200, route:1, asr:3205, intent:8
+11-08 10:26:43.574 11851 11865 I Benchmark: hi_appointment.wav #1 warm total=2405ms rtf=0.27 peakPss=1266MB cpu=8758ms stages=validate:3, vad:32, lid:391, route:1, asr:1965, intent:9
+11-08 10:26:45.771 11851 11865 I Benchmark: hi_appointment.wav #2 warm total=2154ms rtf=0.24 peakPss=1239MB cpu=8180ms stages=validate:3, vad:30, lid:139, route:1, asr:1967, intent:8
+11-08 10:26:46.807 11851 11865 I Benchmark: ta_appointment.wav #0 warm total=989ms rtf=0.23 peakPss=1224MB cpu=1941ms stages=validate:1, vad:11, lid:73, route:1, asr:895, intent:1, extract:1
+11-08 10:26:47.165 11851 11865 I Benchmark: ta_appointment.wav #1 warm total=333ms rtf=0.08 peakPss=931MB cpu=1263ms stages=validate:1, vad:13, lid:77, route:1, asr:234, intent:0, extract:0
+11-08 10:26:47.540 11851 11865 I Benchmark: ta_appointment.wav #2 warm total=331ms rtf=0.08 peakPss=927MB cpu=1262ms stages=validate:1, vad:12, lid:69, route:1, asr:241, intent:0, extract:2
+11-08 10:26:47.553 11851 11865 I Benchmark: report written to /storage/emulated/0/Android/data/co.immanuel.arkspeech/files/benchmark/benchmark.json
+11-08 10:26:47.553 11851 11865 I Benchmark: | clip | run | total ms | RTF | asr ms | lid ms | peak PSS MB | CPU ms |
+11-08 10:26:47.553 11851 11865 I Benchmark: |---|---|---|---|---|---|---|---|
+11-08 10:26:47.553 11851 11865 I Benchmark: | en_appointment.wav | 0 (cold) | 2213 | 0.25 | 1278 | 875 | 920 | 4380 |
+11-08 10:26:47.553 11851 11865 I Benchmark: | en_appointment.wav | 1 | 716 | 0.08 | 507 | 154 | 1046 | 2611 |
+11-08 10:26:47.553 11851 11865 I Benchmark: | en_appointment.wav | 2 | 734 | 0.08 | 509 | 157 | 1048 | 2700 |
+11-08 10:26:47.553 11851 11865 I Benchmark: | hi_appointment.wav | 0 | 3471 | 0.39 | 3205 | 200 | 1183 | 10074 |
+11-08 10:26:47.553 11851 11865 I Benchmark: | hi_appointment.wav | 1 | 2405 | 0.27 | 1965 | 391 | 1266 | 8758 |
+11-08 10:26:47.553 11851 11865 I Benchmark: | hi_appointment.wav | 2 | 2154 | 0.24 | 1967 | 139 | 1240 | 8180 |
+11-08 10:26:47.553 11851 11865 I Benchmark: | ta_appointment.wav | 0 | 989 | 0.23 | 895 | 73 | 1225 | 1941 |
+11-08 10:26:47.553 11851 11865 I Benchmark: | ta_appointment.wav | 1 | 333 | 0.08 | 234 | 77 | 931 | 1263 |
+11-08 10:26:47.553 11851 11865 I Benchmark: | ta_appointment.wav | 2 | 331 | 0.08 | 241 | 69 | 927 | 1262 |

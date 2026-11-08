@@ -1,0 +1,418 @@
+{
+  "device": {
+    "manufacturer": "Google",
+    "model": "sdk_gphone64_arm64",
+    "sdk": "36",
+    "abi": "arm64-v8a",
+    "cores": "4",
+    "totalRamMb": "3916",
+    "availRamMb": "1906",
+    "lowRamDevice": "false",
+    "memoryClassMb": "192",
+    "largeMemoryClassMb": "576",
+    "emulator": "true"
+  },
+  "engines": {
+    "vad": "Silero VAD (sherpa-onnx)",
+    "lid": "CIIL Anuvani-LID (int8)",
+    "asr": "omnilingual-300m-ctc-int8"
+  },
+  "installedPacks": {
+    "silero-vad": 643854,
+    "anuvani-lid-int8": 168995871,
+    "omnilingual-300m-ctc-int8": 365438543
+  },
+  "threads": 4,
+  "runs": [
+    {
+      "clip": "en_appointment.wav",
+      "iteration": 0,
+      "cold": true,
+      "totalMs": 1508,
+      "stages": [
+        {
+          "stage": "validate",
+          "ms": 6
+        },
+        {
+          "stage": "vad",
+          "ms": 51
+        },
+        {
+          "stage": "lid",
+          "ms": 516
+        },
+        {
+          "stage": "route",
+          "ms": 0
+        },
+        {
+          "stage": "asr",
+          "ms": 925
+        },
+        {
+          "stage": "intent",
+          "ms": 2
+        },
+        {
+          "stage": "extract",
+          "ms": 2
+        }
+      ],
+      "audioMs": 8739,
+      "realTimeFactor": 0.17255978944959377,
+      "peakPssMb": 915.4111328125,
+      "cpuMs": 3350,
+      "status": "NEEDS_CLARIFICATION",
+      "language": "en",
+      "intent": "book_appointment"
+    },
+    {
+      "clip": "en_appointment.wav",
+      "iteration": 1,
+      "cold": false,
+      "totalMs": 755,
+      "stages": [
+        {
+          "stage": "validate",
+          "ms": 3
+        },
+        {
+          "stage": "vad",
+          "ms": 30
+        },
+        {
+          "stage": "lid",
+          "ms": 143
+        },
+        {
+          "stage": "route",
+          "ms": 0
+        },
+        {
+          "stage": "asr",
+          "ms": 568
+        },
+        {
+          "stage": "intent",
+          "ms": 0
+        },
+        {
+          "stage": "extract",
+          "ms": 1
+        }
+      ],
+      "audioMs": 8739,
+      "realTimeFactor": 0.08639432429339741,
+      "peakPssMb": 1044.4384765625,
+      "cpuMs": 2726,
+      "status": "NEEDS_CLARIFICATION",
+      "language": "en",
+      "intent": "book_appointment"
+    },
+    {
+      "clip": "en_appointment.wav",
+      "iteration": 2,
+      "cold": false,
+      "totalMs": 646,
+      "stages": [
+        {
+          "stage": "validate",
+          "ms": 3
+        },
+        {
+          "stage": "vad",
+          "ms": 42
+        },
+        {
+          "stage": "lid",
+          "ms": 145
+        },
+        {
+          "stage": "route",
+          "ms": 0
+        },
+        {
+          "stage": "asr",
+          "ms": 446
+        },
+        {
+          "stage": "intent",
+          "ms": 1
+        },
+        {
+          "stage": "extract",
+          "ms": 2
+        }
+      ],
+      "audioMs": 8739,
+      "realTimeFactor": 0.07392150131594004,
+      "peakPssMb": 1044.3564453125,
+      "cpuMs": 2413,
+      "status": "NEEDS_CLARIFICATION",
+      "language": "en",
+      "intent": "book_appointment"
+    },
+    {
+      "clip": "hi_appointment.wav",
+      "iteration": 0,
+      "cold": false,
+      "totalMs": 670,
+      "stages": [
+        {
+          "stage": "validate",
+          "ms": 3
+        },
+        {
+          "stage": "vad",
+          "ms": 34
+        },
+        {
+          "stage": "lid",
+          "ms": 155
+        },
+        {
+          "stage": "route",
+          "ms": 0
+        },
+        {
+          "stage": "asr",
+          "ms": 468
+        },
+        {
+          "stage": "intent",
+          "ms": 0
+        },
+        {
+          "stage": "extract",
+          "ms": 2
+        }
+      ],
+      "audioMs": 8827,
+      "realTimeFactor": 0.07590347796533363,
+      "peakPssMb": 1044.3759765625,
+      "cpuMs": 2503,
+      "status": "NEEDS_CLARIFICATION",
+      "language": "hi",
+      "intent": "book_appointment"
+    },
+    {
+      "clip": "hi_appointment.wav",
+      "iteration": 1,
+      "cold": false,
+      "totalMs": 712,
+      "stages": [
+        {
+          "stage": "validate",
+          "ms": 3
+        },
+        {
+          "stage": "vad",
+          "ms": 33
+        },
+        {
+          "stage": "lid",
+          "ms": 165
+        },
+        {
+          "stage": "route",
+          "ms": 0
+        },
+        {
+          "stage": "asr",
+          "ms": 503
+        },
+        {
+          "stage": "intent",
+          "ms": 1
+        },
+        {
+          "stage": "extract",
+          "ms": 2
+        }
+      ],
+      "audioMs": 8827,
+      "realTimeFactor": 0.08066160643480232,
+      "peakPssMb": 1042.9541015625,
+      "cpuMs": 2680,
+      "status": "NEEDS_CLARIFICATION",
+      "language": "hi",
+      "intent": "book_appointment"
+    },
+    {
+      "clip": "hi_appointment.wav",
+      "iteration": 2,
+      "cold": false,
+      "totalMs": 729,
+      "stages": [
+        {
+          "stage": "validate",
+          "ms": 3
+        },
+        {
+          "stage": "vad",
+          "ms": 42
+        },
+        {
+          "stage": "lid",
+          "ms": 197
+        },
+        {
+          "stage": "route",
+          "ms": 0
+        },
+        {
+          "stage": "asr",
+          "ms": 473
+        },
+        {
+          "stage": "intent",
+          "ms": 1
+        },
+        {
+          "stage": "extract",
+          "ms": 1
+        }
+      ],
+      "audioMs": 8827,
+      "realTimeFactor": 0.0825875155772063,
+      "peakPssMb": 1043.3837890625,
+      "cpuMs": 2705,
+      "status": "NEEDS_CLARIFICATION",
+      "language": "hi",
+      "intent": "book_appointment"
+    },
+    {
+      "clip": "ta_appointment.wav",
+      "iteration": 0,
+      "cold": false,
+      "totalMs": 356,
+      "stages": [
+        {
+          "stage": "validate",
+          "ms": 3
+        },
+        {
+          "stage": "vad",
+          "ms": 20
+        },
+        {
+          "stage": "lid",
+          "ms": 79
+        },
+        {
+          "stage": "route",
+          "ms": 0
+        },
+        {
+          "stage": "asr",
+          "ms": 247
+        },
+        {
+          "stage": "intent",
+          "ms": 0
+        },
+        {
+          "stage": "extract",
+          "ms": 1
+        }
+      ],
+      "audioMs": 4374,
+      "realTimeFactor": 0.08139003200731595,
+      "peakPssMb": 1042.5244140625,
+      "cpuMs": 1331,
+      "status": "NEEDS_CLARIFICATION",
+      "language": "ta",
+      "intent": "book_appointment"
+    },
+    {
+      "clip": "ta_appointment.wav",
+      "iteration": 1,
+      "cold": false,
+      "totalMs": 379,
+      "stages": [
+        {
+          "stage": "validate",
+          "ms": 4
+        },
+        {
+          "stage": "vad",
+          "ms": 24
+        },
+        {
+          "stage": "lid",
+          "ms": 75
+        },
+        {
+          "stage": "route",
+          "ms": 0
+        },
+        {
+          "stage": "asr",
+          "ms": 269
+        },
+        {
+          "stage": "intent",
+          "ms": 0
+        },
+        {
+          "stage": "extract",
+          "ms": 1
+        }
+      ],
+      "audioMs": 4374,
+      "realTimeFactor": 0.08664837677183357,
+      "peakPssMb": 1036.7392578125,
+      "cpuMs": 1410,
+      "status": "NEEDS_CLARIFICATION",
+      "language": "ta",
+      "intent": "book_appointment"
+    },
+    {
+      "clip": "ta_appointment.wav",
+      "iteration": 2,
+      "cold": false,
+      "totalMs": 407,
+      "stages": [
+        {
+          "stage": "validate",
+          "ms": 1
+        },
+        {
+          "stage": "vad",
+          "ms": 15
+        },
+        {
+          "stage": "lid",
+          "ms": 78
+        },
+        {
+          "stage": "route",
+          "ms": 0
+        },
+        {
+          "stage": "asr",
+          "ms": 302
+        },
+        {
+          "stage": "intent",
+          "ms": 1
+        },
+        {
+          "stage": "extract",
+          "ms": 3
+        }
+      ],
+      "audioMs": 4374,
+      "realTimeFactor": 0.09304983996342021,
+      "peakPssMb": 1036.7392578125,
+      "cpuMs": 1548,
+      "status": "NEEDS_CLARIFICATION",
+      "language": "ta",
+      "intent": "book_appointment"
+    }
+  ],
+  "batteryChargeCounterDeltaUah": 0,
+  "wallClockMs": 6980,
+  "baselinePssMb": 204.4072265625
+}

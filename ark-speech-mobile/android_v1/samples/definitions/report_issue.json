@@ -1,0 +1,73 @@
+{
+  "id": "report_issue",
+  "intent": { "name": "report_issue", "description": "Report a civic or facility problem" },
+  "version": 1,
+  "enabled": true,
+  "languages": [],
+  "triggers": {
+    "phrases": {
+      "en": ["report", "complaint", "problem", "issue", "not working", "broken"],
+      "hi": ["समस्या", "शिकायत", "खराब", "नहीं आ रहा", "नहीं आ रही", "टूटा", "problem"],
+      "ta": ["பிரச்சனை", "பிரச்சினை", "புகார்", "வேலை செய்யவில்லை"],
+      "te": ["సమస్య", "ఫిర్యాదు", "పని చేయడం లేదు"],
+      "kn": ["ಸಮಸ್ಯೆ", "ದೂರು", "ಕೆಲಸ ಮಾಡುತ್ತಿಲ್ಲ"],
+      "bn": ["সমস্যা", "অভিযোগ", "কাজ করছে না"],
+      "mr": ["समस्या", "तक्रार"],
+      "gu": ["સમસ્યા", "ફરિયાદ"]
+    }
+  },
+  "fields": [
+    {
+      "name": "issue_type",
+      "description": "Type of problem",
+      "type": "ENUM",
+      "required": true,
+      "validation": {
+        "allowedValues": [
+          { "value": "water", "synonyms": { "en": ["water", "water supply", "pipeline", "tap"], "hi": ["पानी", "पानी की सप्लाई", "नल", "पाइप"], "ta": ["தண்ணீர்", "குடிநீர்", "குழாய்"], "te": ["నీరు", "నీళ్ళు", "నీటి"], "kn": ["ನೀರು", "ನೀರಿನ"], "bn": ["পানি", "জল"], "mr": ["पाणी"], "gu": ["પાણી"] } },
+          { "value": "electricity", "synonyms": { "en": ["electricity", "power", "power cut", "current", "light"], "hi": ["बिजली", "लाइट", "करंट", "पावर"], "ta": ["மின்சாரம்", "கரண்ட்", "பவர்"], "te": ["కరెంటు", "విద్యుత్"], "kn": ["ವಿದ್ಯುತ್", "ಕರೆಂಟ್"], "bn": ["বিদ্যুৎ", "কারেন্ট"], "mr": ["वीज"], "gu": ["વીજળી", "લાઈટ"] } },
+          { "value": "road", "synonyms": { "en": ["road", "pothole", "street"], "hi": ["सड़क", "गड्ढा", "गड्ढे"], "ta": ["சாலை", "ரோடு", "பள்ளம்"], "te": ["రోడ్డు", "గుంత"], "kn": ["ರಸ್ತೆ", "ಗುಂಡಿ"], "bn": ["রাস্তা", "গর্ত"], "mr": ["रस्ता", "खड्डा"], "gu": ["રસ્તો", "ખાડો"] } },
+          { "value": "garbage", "synonyms": { "en": ["garbage", "waste", "trash", "rubbish"], "hi": ["कूड़ा", "कचरा", "गंदगी"], "ta": ["குப்பை"], "te": ["చెత్త"], "kn": ["ಕಸ"], "bn": ["আবর্জনা", "ময়লা"], "mr": ["कचरा"], "gu": ["કચરો"] } },
+          { "value": "streetlight", "synonyms": { "en": ["street light", "streetlight", "lamp post"], "hi": ["स्ट्रीट लाइट", "खंभे की लाइट"], "ta": ["தெரு விளக்கு"], "te": ["వీధి దీపం"], "kn": ["ಬೀದಿ ದೀಪ"], "bn": ["রাস্তার আলো"] } }
+        ]
+      }
+    },
+    {
+      "name": "location",
+      "description": "Where the problem is",
+      "type": "STRING",
+      "required": true,
+      "validation": { "minLength": 3 },
+      "extraction": {
+        "anchors": { "en": ["near", "at", "in front of", "location is", "location"], "*": [] },
+        "anchorsBefore": { "hi": ["के पास", "के नज़दीक", "के सामने"], "ta": ["அருகில்", "அருகே", "பக்கத்தில்"], "te": ["దగ్గర", "వద్ద"], "kn": ["ಹತ್ತಿರ", "ಬಳಿ"], "bn": ["কাছে", "সামনে"], "mr": ["जवळ"], "gu": ["પાસે", "નજીક"] },
+        "stopWords": { "en": ["it", "is", "there", "and"], "hi": ["में", "पर", "है"] },
+        "maxTokens": 5,
+        "instructions": "In Indic languages the place comes before the postposition (गांधी रोड के पास)."
+      }
+    },
+    {
+      "name": "severity",
+      "description": "Urgency",
+      "type": "ENUM",
+      "required": false,
+      "validation": {
+        "allowedValues": [
+          { "value": "high", "synonyms": { "en": ["urgent", "emergency", "immediately", "very serious"], "hi": ["ज़रूरी", "जरूरी", "तुरंत", "अर्जेंट", "इमरजेंसी"], "ta": ["அவசரம்", "அவசரமாக", "உடனடியாக"], "te": ["అత్యవసరం", "వెంటనే"], "kn": ["ತುರ್ತು", "ತಕ್ಷಣ"], "bn": ["জরুরি", "অবিলম্বে"], "mr": ["तातडीचे"], "gu": ["તાત્કાલિક"] } },
+          { "value": "low", "synonyms": { "en": ["minor", "not urgent", "whenever possible"], "hi": ["छोटी", "जल्दी नहीं"], "ta": ["சிறிய", "அவசரம் இல்லை"] } }
+        ]
+      }
+    },
+    { "name": "contact_phone", "description": "Contact number", "type": "PHONE", "required": false }
+  ],
+  "confidenceThreshold": 0.5,
+  "fallback": "ASK_USER",
+  "examples": [
+    { "language": "en", "text": "I want to report a water supply problem near Gandhi Road bus stop. It is urgent.", "expected": { "issue_type": "water", "location": "Gandhi Road bus stop", "severity": "high" } },
+    { "language": "hi", "text": "गांधी रोड बस स्टॉप के पास पानी की सप्लाई की समस्या है, बहुत ज़रूरी है।", "expected": { "issue_type": "water", "location": "गांधी रोड बस स्टॉप", "severity": "high" } },
+    { "language": "ta", "text": "காந்தி சாலை பேருந்து நிறுத்தம் அருகில் தண்ணீர் வசதி பிரச்சனை உள்ளது. இது அவசரம்.", "expected": { "issue_type": "water", "location": "காந்தி சாலை பேருந்து நிறுத்தம்", "severity": "high" } }
+  ],
+  "instructions": "Civic complaint intake. Applies to every language (languages list empty).",
+  "updatedBy": "sample",
+  "changeNote": "Initial sample"
+}

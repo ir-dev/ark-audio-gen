@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://immanuel.co/ark-speech/output-schema-1.0.json",
+  "title": "Ark Speech PipelineResult",
+  "type": "object",
+  "required": ["schemaVersion", "requestId", "status", "fields", "missingRequired", "clarifications", "warnings", "processing", "retention"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "requestId": { "type": "string" },
+    "status": { "enum": ["OK", "NEEDS_CLARIFICATION", "AUDIO_REJECTED", "NO_SPEECH", "UNSUPPORTED_LANGUAGE", "MODEL_UNAVAILABLE", "NO_INTENT", "FAILED", "IN_PROGRESS"] },
+    "audio": { "type": ["object", "null"], "properties": {
+      "durationMs": { "type": "integer" }, "sampleRate": { "type": "integer" }, "rmsDbfs": { "type": "number" }, "peakDbfs": { "type": "number" },
+      "clippingRatio": { "type": "number" }, "estimatedSnrDb": { "type": "number" }, "speechRatio": { "type": "number" }, "dcOffset": { "type": "number" },
+      "issues": { "type": "array", "items": { "enum": ["EMPTY", "TOO_SHORT", "TOO_LONG", "SILENT", "TOO_QUIET", "CLIPPING", "NOISY", "LOW_SPEECH_RATIO", "DC_OFFSET", "UNSUPPORTED_FORMAT"] } },
+      "verdict": { "enum": ["OK", "WARN", "REJECT"] } } },
+    "speechSegments": { "type": "array", "items": { "$ref": "#/$defs/segment" } },
+    "language": { "type": ["object", "null"], "properties": {
+      "code": { "type": ["string", "null"] }, "confidence": { "type": "number" },
+      "alternatives": { "type": "array", "items": { "type": "object", "properties": { "code": { "type": "string" }, "probability": { "type": "number" } } } },
+      "perSegment": { "type": "array" }, "timeShare": { "type": "object", "additionalProperties": { "type": "number" } },
+      "isCodeMixed": { "type": "boolean" }, "uncertain": { "type": "boolean" }, "supported": { "type": "boolean" },
+      "source": { "enum": ["AUTO", "USER_OVERRIDE", "DEFINITION_DEFAULT"] }, "engine": { "type": "string" }, "durationMs": { "type": "integer" } } },
+    "transcript": { "type": ["object", "null"], "properties": {
+      "text": { "type": "string" }, "language": { "type": ["string", "null"] }, "segments": { "type": "array" }, "confidence": { "type": "number" },
+      "confidenceSource": { "type": "string" }, "modelId": { "type": "string" }, "engine": { "type": "string" }, "script": { "type": ["string", "null"] }, "edited": { "type": "boolean" } } },
+    "intent": { "type": ["object", "null"], "properties": {
+      "status": { "enum": ["MATCHED", "LOW_CONFIDENCE", "AMBIGUOUS", "NO_MATCH", "USER_SELECTED"] },
+      "best": { "type": ["object", "null"], "$ref": "#/$defs/intentCandidate" },
+      "alternatives": { "type": "array", "items": { "$ref": "#/$defs/intentCandidate" } }, "confidence": { "type": "number" }, "engine": { "type": "string" } } },
+    "fields": { "type": "object", "additionalProperties": { "$ref": "#/$defs/fieldResult" } },
+    "missingRequired": { "type": "array", "items": { "type": "string" } },
+    "clarifications": { "type": "array", "items": { "type": "object", "required": ["kind", "prompt"], "properties": {
+      "kind": { "enum": ["LANGUAGE", "INTENT", "FIELD_MISSING", "FIELD_AMBIGUOUS", "FIELD_LOW_CONFIDENCE", "FIELD_INVALID"] },
+      "field": { "type": ["string", "null"] }, "prompt": { "type": "string" }, "options": { "type": "array", "items": { "type": "string" } },
+      "candidates": { "type": "array", "items": { "$ref": "#/$defs/candidate" } } } } },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "processing": { "type": "object", "required": ["startedAt", "totalMs", "stages"], "properties": {
+      "startedAt": { "type": "string" }, "totalMs": { "type": "integer" },
+      "stages": { "type": "array", "items": { "type": "object", "properties": { "stage": { "type": "string" }, "ms": { "type": "integer" }, "status": { "type": "string" }, "detail": { "type": ["string", "null"] } } } },
+      "vadEngine": { "type": ["string", "null"] }, "lidEngine": { "type": ["string", "null"] }, "asrEngine": { "type": ["string", "null"] }, "asrModelId": { "type": ["string", "null"] },
+      "nluEngine": { "type": ["string", "null"] }, "device": { "type": "object", "additionalProperties": { "type": "string" } } } },
+    "retention": { "type": "object", "properties": {
+      "consentToRetainAudio": { "type": "boolean" }, "consentToRetainTranscript": { "type": "boolean" }, "audioRetained": { "type": "boolean" },
+      "transcriptRetained": { "type": "boolean" }, "processedOnDevice": { "type": "boolean" } } }
+  },
+  "$defs": {
+    "segment": { "type": "object", "properties": { "startMs": { "type": "integer" }, "endMs": { "type": "integer" } } },
+    "candidate": { "type": "object", "properties": { "value": { "type": "string" }, "raw": { "type": "string" }, "confidence": { "type": "number" }, "source": { "type": "string" },
+      "start": { "type": "integer" }, "end": { "type": "integer" }, "extra": { "type": "object" }, "note": { "type": ["string", "null"] } } },
+    "intentCandidate": { "type": "object", "properties": { "definitionId": { "type": "string" }, "intentName": { "type": "string" }, "definitionVersion": { "type": "integer" },
+      "score": { "type": "number" }, "matchedPhrases": { "type": "array", "items": { "type": "string" } }, "matchedPatterns": { "type": "integer" }, "negativeHits": { "type": "integer" } } },
+    "fieldResult": { "type": "object", "required": ["name", "type", "required", "status"], "properties": {
+      "name": { "type": "string" }, "type": { "enum": ["STRING", "INTEGER", "NUMBER", "BOOLEAN", "DATE", "TIME", "PHONE", "AMOUNT", "ENUM", "DURATION"] },
+      "required": { "type": "boolean" }, "status": { "enum": ["EXTRACTED", "MISSING", "LOW_CONFIDENCE", "AMBIGUOUS", "INVALID", "DEFAULTED", "USER_PROVIDED"] },
+      "value": { "type": ["string", "null"] }, "raw": { "type": ["string", "null"] }, "confidence": { "type": "number" },
+      "candidates": { "type": "array", "items": { "$ref": "#/$defs/candidate" } }, "reason": { "type": ["string", "null"] }, "extra": { "type": "object", "additionalProperties": { "type": "string" } } } }
+  }
+}

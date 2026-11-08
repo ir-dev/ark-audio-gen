@@ -1,0 +1,85 @@
+{
+  "id": "book_appointment",
+  "intent": { "name": "book_appointment", "description": "Book a clinic or doctor appointment" },
+  "version": 1,
+  "enabled": true,
+  "languages": ["en", "hi", "ta", "te", "kn", "bn", "mr", "gu"],
+  "triggers": {
+    "phrases": {
+      "en": ["book an appointment", "appointment", "book appointment", "schedule a visit", "see the doctor"],
+      "hi": ["अपॉइंटमेंट", "अपॉइंटमेंट बुक", "डॉक्टर से मिलना", "समय लेना", "appointment"],
+      "ta": ["அப்பாய்ண்ட்மெண்ட்", "அப்பாயிண்ட்மென்ட்", "சந்திப்பு", "நேரம் பதிவு", "புக்"],
+      "te": ["అపాయింట్‌మెంట్", "అపాయింట్మెంట్", "బుక్"],
+      "kn": ["ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್", "ಅಪಾಯಿಂಟ್ಮೆಂಟ್", "ಬುಕ್"],
+      "bn": ["অ্যাপয়েন্টমেন্ট", "বুক"],
+      "mr": ["अपॉइंटमेंट", "भेट"],
+      "gu": ["એપોઇન્ટમેન્ટ", "મુલાકાત"]
+    },
+    "patterns": [],
+    "negativePhrases": { "en": ["cancel"], "hi": ["रद्द", "कैंसल"], "ta": ["ரத்து"], "te": ["రద్దు"], "kn": ["ರದ್ದು"], "bn": ["বাতিল"] }
+  },
+  "fields": [
+    {
+      "name": "doctor_name",
+      "description": "Doctor's name",
+      "type": "STRING",
+      "required": false,
+      "extraction": {
+        "anchors": { "en": ["with doctor", "with dr", "doctor", "dr"], "hi": ["डॉक्टर", "डॉ"], "ta": ["டாக்டர்", "மருத்துவர்"], "te": ["డాక్టర్"], "kn": ["ಡಾಕ್ಟರ್", "ವೈದ್ಯ"], "bn": ["ডাক্তার"], "mr": ["डॉक्टर"], "gu": ["ડૉક્ટર"] },
+        "stopWords": { "hi": ["के", "से", "को"], "ta": ["உடன்"], "*": ["for", "at", "on", "tomorrow", "today"] },
+        "maxTokens": 2,
+        "instructions": "Take the one or two words after the title. Do not include postpositions."
+      }
+    },
+    {
+      "name": "appointment_date",
+      "description": "Appointment date",
+      "type": "DATE",
+      "required": true,
+      "validation": { "maxDaysFromToday": 365 },
+      "extraction": { "temporalDirection": "FUTURE", "instructions": "Relative words (tomorrow, कल, நாளை) resolve forward because appointments are in the future." }
+    },
+    {
+      "name": "appointment_time",
+      "description": "Appointment time",
+      "type": "TIME",
+      "required": false,
+      "extraction": { "instructions": "Hours without AM/PM or a part of day are reported as low confidence." }
+    },
+    {
+      "name": "phone",
+      "description": "Callback phone number",
+      "type": "PHONE",
+      "required": false,
+      "validation": { "regex": "^[6-9][0-9]{9}$" },
+      "extraction": { "anchors": { "en": ["phone number is", "number is", "phone", "mobile"], "hi": ["फ़ोन नंबर", "फोन नंबर", "नंबर", "मोबाइल"], "ta": ["எண்", "போன் நம்பர்"] } }
+    },
+    {
+      "name": "department",
+      "description": "Department",
+      "type": "ENUM",
+      "required": false,
+      "validation": {
+        "allowedValues": [
+          { "value": "general", "synonyms": { "en": ["general", "gp", "physician"], "hi": ["जनरल", "फिजिशियन"], "ta": ["பொது"] } },
+          { "value": "dental", "synonyms": { "en": ["dental", "dentist", "tooth", "teeth"], "hi": ["दाँत", "दांत", "डेंटल", "डेंटिस्ट"], "ta": ["பல்", "பல் மருத்துவர்"], "te": ["పళ్ళు", "దంత"], "kn": ["ಹಲ್ಲು", "ದಂತ"], "bn": ["দাঁত", "ডেন্টাল"] } },
+          { "value": "eye", "synonyms": { "en": ["eye", "ophthalmology", "optician"], "hi": ["आँख", "आंख", "नेत्र"], "ta": ["கண்"], "te": ["కంటి"], "kn": ["ಕಣ್ಣು"], "bn": ["চোখ"] } },
+          { "value": "cardiology", "synonyms": { "en": ["heart", "cardiology", "cardiologist"], "hi": ["दिल", "हृदय", "कार्डियोलॉजी"], "ta": ["இதயம்"], "te": ["గుండె"], "kn": ["ಹೃದಯ"], "bn": ["হৃদরোগ"] } },
+          { "value": "orthopedic", "synonyms": { "en": ["bone", "orthopedic", "ortho", "fracture"], "hi": ["हड्डी", "ऑर्थो"], "ta": ["எலும்பு"], "te": ["ఎముక"], "kn": ["ಮೂಳೆ"], "bn": ["হাড়"] } },
+          { "value": "pediatric", "synonyms": { "en": ["child", "children", "pediatric", "paediatric"], "hi": ["बच्चे", "बच्चों", "शिशु"], "ta": ["குழந்தை"], "te": ["పిల్లల"], "kn": ["ಮಕ್ಕಳ"], "bn": ["শিশু"] } }
+        ]
+      }
+    }
+  ],
+  "confidenceThreshold": 0.5,
+  "fallback": "ASK_USER",
+  "examples": [
+    { "language": "en", "text": "Book an appointment with Doctor Sharma for tomorrow at ten in the morning. My phone number is nine eight seven six five four three two one zero.", "expected": { "doctor_name": "Sharma", "appointment_time": "10:00", "phone": "9876543210" } },
+    { "language": "hi", "text": "मुझे कल सुबह दस बजे डॉक्टर शर्मा के साथ अपॉइंटमेंट बुक करनी है। मेरा फ़ोन नंबर नौ आठ सात छह पाँच चार तीन दो एक शून्य है।", "expected": { "doctor_name": "शर्मा", "appointment_time": "10:00", "phone": "9876543210" } },
+    { "language": "ta", "text": "நாளை காலை பத்து மணிக்கு டாக்டர் குமாருடன் அப்பாய்ண்ட்மெண்ட் புக் செய்ய வேண்டும்.", "expected": { "doctor_name": "குமாருடன்", "appointment_time": "10:00" } },
+    { "language": "hi", "text": "मुझे Doctor Sharma के साथ kal appointment book करनी है, time ten AM.", "expected": { "doctor_name": "Sharma", "appointment_time": "10:00" }, "note": "code-mixed Hindi/English" }
+  ],
+  "instructions": "Appointment booking for a clinic front desk. The date is mandatory; everything else is asked for only if missing.",
+  "updatedBy": "sample",
+  "changeNote": "Initial sample"
+}

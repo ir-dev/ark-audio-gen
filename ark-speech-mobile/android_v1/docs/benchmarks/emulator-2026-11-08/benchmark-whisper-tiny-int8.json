@@ -1,0 +1,389 @@
+{
+  "device": {
+    "manufacturer": "Google",
+    "model": "sdk_gphone64_arm64",
+    "sdk": "36",
+    "abi": "arm64-v8a",
+    "cores": "4",
+    "totalRamMb": "3916",
+    "availRamMb": "2075",
+    "lowRamDevice": "false",
+    "memoryClassMb": "192",
+    "largeMemoryClassMb": "576",
+    "emulator": "true"
+  },
+  "engines": {
+    "vad": "Silero VAD (sherpa-onnx)",
+    "lid": "CIIL Anuvani-LID (int8)",
+    "asr": "whisper-tiny-int8"
+  },
+  "installedPacks": {
+    "silero-vad": 643854,
+    "anuvani-lid-int8": 168995871,
+    "omnilingual-300m-ctc-int8": 365438543,
+    "whisper-tiny-int8": 103609903
+  },
+  "threads": 4,
+  "runs": [
+    {
+      "clip": "en_appointment.wav",
+      "iteration": 0,
+      "cold": true,
+      "totalMs": 948,
+      "stages": [
+        {
+          "stage": "validate",
+          "ms": 8
+        },
+        {
+          "stage": "vad",
+          "ms": 68
+        },
+        {
+          "stage": "lid",
+          "ms": 516
+        },
+        {
+          "stage": "route",
+          "ms": 1
+        },
+        {
+          "stage": "asr",
+          "ms": 346
+        },
+        {
+          "stage": "intent",
+          "ms": 0
+        },
+        {
+          "stage": "extract",
+          "ms": 2
+        }
+      ],
+      "audioMs": 8739,
+      "realTimeFactor": 0.108479231033299,
+      "peakPssMb": 636.8671875,
+      "cpuMs": 1930,
+      "status": "OK",
+      "language": "en",
+      "intent": "book_appointment"
+    },
+    {
+      "clip": "en_appointment.wav",
+      "iteration": 1,
+      "cold": false,
+      "totalMs": 377,
+      "stages": [
+        {
+          "stage": "validate",
+          "ms": 3
+        },
+        {
+          "stage": "vad",
+          "ms": 29
+        },
+        {
+          "stage": "lid",
+          "ms": 135
+        },
+        {
+          "stage": "route",
+          "ms": 0
+        },
+        {
+          "stage": "asr",
+          "ms": 204
+        },
+        {
+          "stage": "intent",
+          "ms": 0
+        },
+        {
+          "stage": "extract",
+          "ms": 1
+        }
+      ],
+      "audioMs": 8739,
+      "realTimeFactor": 0.04313994736239844,
+      "peakPssMb": 708.34375,
+      "cpuMs": 1299,
+      "status": "OK",
+      "language": "en",
+      "intent": "book_appointment"
+    },
+    {
+      "clip": "en_appointment.wav",
+      "iteration": 2,
+      "cold": false,
+      "totalMs": 351,
+      "stages": [
+        {
+          "stage": "validate",
+          "ms": 3
+        },
+        {
+          "stage": "vad",
+          "ms": 31
+        },
+        {
+          "stage": "lid",
+          "ms": 135
+        },
+        {
+          "stage": "route",
+          "ms": 0
+        },
+        {
+          "stage": "asr",
+          "ms": 174
+        },
+        {
+          "stage": "intent",
+          "ms": 0
+        },
+        {
+          "stage": "extract",
+          "ms": 1
+        }
+      ],
+      "audioMs": 8739,
+      "realTimeFactor": 0.04016477857878476,
+      "peakPssMb": 709.65625,
+      "cpuMs": 1211,
+      "status": "OK",
+      "language": "en",
+      "intent": "book_appointment"
+    },
+    {
+      "clip": "hi_appointment.wav",
+      "iteration": 0,
+      "cold": false,
+      "totalMs": 361,
+      "stages": [
+        {
+          "stage": "validate",
+          "ms": 5
+        },
+        {
+          "stage": "vad",
+          "ms": 29
+        },
+        {
+          "stage": "lid",
+          "ms": 145
+        },
+        {
+          "stage": "route",
+          "ms": 0
+        },
+        {
+          "stage": "asr",
+          "ms": 173
+        },
+        {
+          "stage": "intent",
+          "ms": 3
+        }
+      ],
+      "audioMs": 8827,
+      "realTimeFactor": 0.040897247082814094,
+      "peakPssMb": 709.32421875,
+      "cpuMs": 1231,
+      "status": "NO_INTENT",
+      "language": "hi"
+    },
+    {
+      "clip": "hi_appointment.wav",
+      "iteration": 1,
+      "cold": false,
+      "totalMs": 354,
+      "stages": [
+        {
+          "stage": "validate",
+          "ms": 3
+        },
+        {
+          "stage": "vad",
+          "ms": 28
+        },
+        {
+          "stage": "lid",
+          "ms": 137
+        },
+        {
+          "stage": "route",
+          "ms": 0
+        },
+        {
+          "stage": "asr",
+          "ms": 176
+        },
+        {
+          "stage": "intent",
+          "ms": 4
+        }
+      ],
+      "audioMs": 8827,
+      "realTimeFactor": 0.040104225671235984,
+      "peakPssMb": 709.703125,
+      "cpuMs": 1210,
+      "status": "NO_INTENT",
+      "language": "hi"
+    },
+    {
+      "clip": "hi_appointment.wav",
+      "iteration": 2,
+      "cold": false,
+      "totalMs": 368,
+      "stages": [
+        {
+          "stage": "validate",
+          "ms": 3
+        },
+        {
+          "stage": "vad",
+          "ms": 30
+        },
+        {
+          "stage": "lid",
+          "ms": 137
+        },
+        {
+          "stage": "route",
+          "ms": 0
+        },
+        {
+          "stage": "asr",
+          "ms": 189
+        },
+        {
+          "stage": "intent",
+          "ms": 4
+        }
+      ],
+      "audioMs": 8827,
+      "realTimeFactor": 0.0416902684943922,
+      "peakPssMb": 709.73046875,
+      "cpuMs": 1247,
+      "status": "NO_INTENT",
+      "language": "hi"
+    },
+    {
+      "clip": "ta_appointment.wav",
+      "iteration": 0,
+      "cold": false,
+      "totalMs": 275,
+      "stages": [
+        {
+          "stage": "validate",
+          "ms": 1
+        },
+        {
+          "stage": "vad",
+          "ms": 12
+        },
+        {
+          "stage": "lid",
+          "ms": 74
+        },
+        {
+          "stage": "route",
+          "ms": 0
+        },
+        {
+          "stage": "asr",
+          "ms": 178
+        },
+        {
+          "stage": "intent",
+          "ms": 4
+        }
+      ],
+      "audioMs": 4374,
+      "realTimeFactor": 0.06287151348879744,
+      "peakPssMb": 704.42578125,
+      "cpuMs": 1003,
+      "status": "NO_INTENT",
+      "language": "ta"
+    },
+    {
+      "clip": "ta_appointment.wav",
+      "iteration": 1,
+      "cold": false,
+      "totalMs": 301,
+      "stages": [
+        {
+          "stage": "validate",
+          "ms": 1
+        },
+        {
+          "stage": "vad",
+          "ms": 11
+        },
+        {
+          "stage": "lid",
+          "ms": 82
+        },
+        {
+          "stage": "route",
+          "ms": 0
+        },
+        {
+          "stage": "asr",
+          "ms": 198
+        },
+        {
+          "stage": "intent",
+          "ms": 3
+        }
+      ],
+      "audioMs": 4374,
+      "realTimeFactor": 0.06881572930955647,
+      "peakPssMb": 708.671875,
+      "cpuMs": 1088,
+      "status": "NO_INTENT",
+      "language": "ta"
+    },
+    {
+      "clip": "ta_appointment.wav",
+      "iteration": 2,
+      "cold": false,
+      "totalMs": 285,
+      "stages": [
+        {
+          "stage": "validate",
+          "ms": 1
+        },
+        {
+          "stage": "vad",
+          "ms": 11
+        },
+        {
+          "stage": "lid",
+          "ms": 75
+        },
+        {
+          "stage": "route",
+          "ms": 0
+        },
+        {
+          "stage": "asr",
+          "ms": 187
+        },
+        {
+          "stage": "intent",
+          "ms": 5
+        }
+      ],
+      "audioMs": 4374,
+      "realTimeFactor": 0.06515775034293553,
+      "peakPssMb": 708.89453125,
+      "cpuMs": 1004,
+      "status": "NO_INTENT",
+      "language": "ta"
+    }
+  ],
+  "batteryChargeCounterDeltaUah": 0,
+  "wallClockMs": 4487,
+  "baselinePssMb": 181.87890625
+}

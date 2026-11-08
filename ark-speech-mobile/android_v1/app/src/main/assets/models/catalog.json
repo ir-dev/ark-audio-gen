@@ -1,0 +1,391 @@
+{
+  "version": 1,
+  "packs": [
+    {
+      "id": "silero-vad",
+      "kind": "VAD",
+      "engine": "sherpa-silero-vad",
+      "displayName": "Silero VAD",
+      "description": "Voice activity detection: finds speech, drops silence, cuts long speech into model-sized pieces.",
+      "languages": [
+        "*"
+      ],
+      "files": [
+        {
+          "name": "silero_vad.onnx",
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad.onnx",
+          "sha256": "9e2449e1087496d8d4caba907f23e0bd3f78d91fa552479bb9c23ac09cbb1fd6",
+          "sizeBytes": 643854
+        }
+      ],
+      "installedSizeBytes": 643854,
+      "licence": "MIT",
+      "source": "https://github.com/snakers4/silero-vad (packaged by sherpa-onnx)",
+      "tier": "default",
+      "peakRamMb": 20,
+      "notes": "Required by every other stage."
+    },
+    {
+      "id": "anuvani-lid-int8",
+      "kind": "LID",
+      "engine": "ort-anuvani-lid",
+      "displayName": "CIIL Anuvani-LID (int8)",
+      "description": "Spoken language identification for the 22 scheduled languages of India plus Indian English, calibrated probabilities (ECE 0.008). 115.6M-parameter Conformer.",
+      "languages": [
+        "as",
+        "bn",
+        "brx",
+        "doi",
+        "en",
+        "gu",
+        "hi",
+        "kn",
+        "ks",
+        "kok",
+        "mai",
+        "ml",
+        "mni",
+        "mr",
+        "ne",
+        "or",
+        "pa",
+        "sa",
+        "sat",
+        "sd",
+        "ta",
+        "te",
+        "ur"
+      ],
+      "files": [
+        {
+          "name": "anuvani_lid.int8.onnx",
+          "url": "https://huggingface.co/CIIL/Anuvani-LID/resolve/main/mobile_inference/models/anuvani_lid.int8.onnx",
+          "sha256": "d787948f922bd699e1cbcbeeeb16bf830514ec138bbbb89b516dccbc7283bbe5",
+          "sizeBytes": 168995871
+        }
+      ],
+      "installedSizeBytes": 168995871,
+      "licence": "Apache-2.0",
+      "source": "https://huggingface.co/CIIL/Anuvani-LID (arXiv 2610.20263)",
+      "tier": "default",
+      "peakRamMb": 480,
+      "params": {
+        "pieceSeconds": "15"
+      },
+      "notes": "Runs through ONNX Runtime. Peak RSS 307-474 MB for 2-15 s pieces (CIIL measurement, 4 threads)."
+    },
+    {
+      "id": "omnilingual-300m-ctc-int8",
+      "kind": "ASR",
+      "engine": "sherpa-omnilingual-ctc",
+      "displayName": "Omnilingual ASR 300M CTC (int8)",
+      "description": "Meta's wav2vec2 CTC model covering 1,600+ languages including all 23 here, in each language's own script. One model for every language; no language hint needed.",
+      "languages": [
+        "*"
+      ],
+      "files": [
+        {
+          "name": "model.int8.onnx",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12/resolve/main/model.int8.onnx",
+          "sha256": "e7c4e54ee4c4c47829cc6667d5d00ed8ea7bef1dcfeef0fce766f77752a2726c",
+          "sizeBytes": 365352120
+        },
+        {
+          "name": "tokens.txt",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12/resolve/main/tokens.txt",
+          "sha256": "a7a044c52cb29cbe8b0dc1953e92cefd4ca16b0ed968177b6beab21f9a7d0b31",
+          "sizeBytes": 86423
+        }
+      ],
+      "installedSizeBytes": 365438543,
+      "licence": "Apache-2.0",
+      "source": "https://github.com/facebookresearch/omnilingual-asr (ONNX by sherpa-onnx)",
+      "tier": "default",
+      "peakRamMb": 700,
+      "params": {
+        "model": "model.int8.onnx",
+        "tokens": "tokens.txt"
+      },
+      "notes": "Accepts pieces up to 40 s; the VAD caps pieces at 25 s. Weakest of the Omnilingual sizes; the 1B int8 (750 MB) is more accurate but too heavy for mid-range phones."
+    },
+    {
+      "id": "whisper-tiny-int8",
+      "kind": "ASR",
+      "engine": "sherpa-whisper",
+      "displayName": "Whisper tiny multilingual (int8)",
+      "description": "OpenAI Whisper tiny: 99 languages, 15 of the 23 here. Decodes in the detected language; 30 s window.",
+      "languages": [
+        "as",
+        "bn",
+        "en",
+        "gu",
+        "hi",
+        "kn",
+        "ml",
+        "mr",
+        "ne",
+        "pa",
+        "sa",
+        "sd",
+        "ta",
+        "te",
+        "ur"
+      ],
+      "files": [
+        {
+          "name": "tiny-encoder.int8.onnx",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-tiny/resolve/main/tiny-encoder.int8.onnx",
+          "sha256": "d24fb083ae3b1041fc24e97971d60e280c9342201fbb67b0ab428a8b4a51a434",
+          "sizeBytes": 12937772
+        },
+        {
+          "name": "tiny-decoder.int8.onnx",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-tiny/resolve/main/tiny-decoder.int8.onnx",
+          "sha256": "d2fece8dd42771f1df975c6c0445770d0c292bf7547c2cae04a6c0cc57540925",
+          "sizeBytes": 89855401
+        },
+        {
+          "name": "tiny-tokens.txt",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-tiny/resolve/main/tiny-tokens.txt",
+          "sha256": "b34b360dbb493e781e479794586d661700670d65564001f23024971d1f2fa126",
+          "sizeBytes": 816730
+        }
+      ],
+      "installedSizeBytes": 103609903,
+      "licence": "MIT",
+      "source": "https://github.com/openai/whisper (ONNX by sherpa-onnx)",
+      "tier": "optional",
+      "peakRamMb": 300,
+      "params": {
+        "encoder": "tiny-encoder.int8.onnx",
+        "decoder": "tiny-decoder.int8.onnx",
+        "tokens": "tiny-tokens.txt",
+        "lid": "true"
+      },
+      "notes": "Also usable as the fallback language identifier when Anuvani-LID is not installed."
+    },
+    {
+      "id": "whisper-base-int8",
+      "kind": "ASR",
+      "engine": "sherpa-whisper",
+      "displayName": "Whisper base multilingual (int8)",
+      "description": "OpenAI Whisper base: 99 languages, 15 of the 23 here. Decodes in the detected language; 30 s window.",
+      "languages": [
+        "as",
+        "bn",
+        "en",
+        "gu",
+        "hi",
+        "kn",
+        "ml",
+        "mr",
+        "ne",
+        "pa",
+        "sa",
+        "sd",
+        "ta",
+        "te",
+        "ur"
+      ],
+      "files": [
+        {
+          "name": "base-encoder.int8.onnx",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-base/resolve/main/base-encoder.int8.onnx",
+          "sha256": "0b8fb1304b6109976038efff5ace81720e00386f3ff6b54ee8c75291ca0a1e11",
+          "sizeBytes": 29120534
+        },
+        {
+          "name": "base-decoder.int8.onnx",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-base/resolve/main/base-decoder.int8.onnx",
+          "sha256": "9759d217388a01b3a4c7c15533201067b48ae819c4daafc8624e64b9409dc02d",
+          "sizeBytes": 130672026
+        },
+        {
+          "name": "base-tokens.txt",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-base/resolve/main/base-tokens.txt",
+          "sha256": "b34b360dbb493e781e479794586d661700670d65564001f23024971d1f2fa126",
+          "sizeBytes": 816730
+        }
+      ],
+      "installedSizeBytes": 160609290,
+      "licence": "MIT",
+      "source": "https://github.com/openai/whisper (ONNX by sherpa-onnx)",
+      "tier": "optional",
+      "peakRamMb": 450,
+      "params": {
+        "encoder": "base-encoder.int8.onnx",
+        "decoder": "base-decoder.int8.onnx",
+        "tokens": "base-tokens.txt",
+        "lid": "true"
+      },
+      "notes": "Also usable as the fallback language identifier when Anuvani-LID is not installed."
+    },
+    {
+      "id": "whisper-small-int8",
+      "kind": "ASR",
+      "engine": "sherpa-whisper",
+      "displayName": "Whisper small multilingual (int8)",
+      "description": "OpenAI Whisper small: 99 languages, 15 of the 23 here. Decodes in the detected language; 30 s window.",
+      "languages": [
+        "as",
+        "bn",
+        "en",
+        "gu",
+        "hi",
+        "kn",
+        "ml",
+        "mr",
+        "ne",
+        "pa",
+        "sa",
+        "sd",
+        "ta",
+        "te",
+        "ur"
+      ],
+      "files": [
+        {
+          "name": "small-encoder.int8.onnx",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-small/resolve/main/small-encoder.int8.onnx",
+          "sha256": "4cbe7b22fa9026b843b60a68640c747de05bafb1a11b57edc0e66c232d9f33a9",
+          "sizeBytes": 112442483
+        },
+        {
+          "name": "small-decoder.int8.onnx",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-small/resolve/main/small-decoder.int8.onnx",
+          "sha256": "acad50b5c782696e91b55914cc5ab4f756f1532f76e22aa6fc615f39fb69a8ee",
+          "sizeBytes": 262226114
+        },
+        {
+          "name": "small-tokens.txt",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-small/resolve/main/small-tokens.txt",
+          "sha256": "b34b360dbb493e781e479794586d661700670d65564001f23024971d1f2fa126",
+          "sizeBytes": 816730
+        }
+      ],
+      "installedSizeBytes": 375485327,
+      "licence": "MIT",
+      "source": "https://github.com/openai/whisper (ONNX by sherpa-onnx)",
+      "tier": "optional",
+      "peakRamMb": 900,
+      "params": {
+        "encoder": "small-encoder.int8.onnx",
+        "decoder": "small-decoder.int8.onnx",
+        "tokens": "small-tokens.txt",
+        "lid": "true"
+      },
+      "notes": "Best Whisper accuracy that still fits a mid-range phone; weak on Indian languages compared with Indic-specific models."
+    },
+    {
+      "id": "dolphin-base-ctc-int8",
+      "kind": "ASR",
+      "engine": "sherpa-dolphin-ctc",
+      "displayName": "Dolphin base CTC (int8)",
+      "description": "DataoceanAI Dolphin: 40 Eastern languages. Covers hi ur bn ta te gu or ne ks mr here; no English.",
+      "languages": [
+        "hi",
+        "ur",
+        "bn",
+        "ta",
+        "te",
+        "gu",
+        "or",
+        "ne",
+        "ks",
+        "mr"
+      ],
+      "files": [
+        {
+          "name": "model.int8.onnx",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-dolphin-base-ctc-multi-lang-int8-2025-04-02/resolve/main/model.int8.onnx",
+          "sha256": "a3aa46c97f3f60f135ff949793cb05fabe7a0b3c484dc2e3cc699d354ee11b76",
+          "sizeBytes": 103729802
+        },
+        {
+          "name": "tokens.txt",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-dolphin-base-ctc-multi-lang-int8-2025-04-02/resolve/main/tokens.txt",
+          "sha256": "c3788261a51df1899ea4b210b552cd42139204de72c0ad60f6cebb199078872e",
+          "sizeBytes": 504662
+        }
+      ],
+      "installedSizeBytes": 104234464,
+      "licence": "Apache-2.0",
+      "source": "https://github.com/DataoceanAI/Dolphin (ONNX by sherpa-onnx)",
+      "tier": "optional",
+      "peakRamMb": 350,
+      "params": {
+        "model": "model.int8.onnx",
+        "tokens": "tokens.txt"
+      },
+      "notes": "Lightest Indic option (140M params). Route English elsewhere."
+    },
+    {
+      "id": "indicconformer-hi-int8",
+      "kind": "ASR",
+      "engine": "sherpa-nemo-ctc",
+      "displayName": "IndicConformer 600M Hindi (int8)",
+      "description": "AI4Bharat IndicConformer 600M multilingual, CTC head masked to Hindi. Strongest Indic accuracy; one 628 MB file per language.",
+      "languages": [
+        "hi"
+      ],
+      "files": [
+        {
+          "name": "indicconformer-hi.int8.onnx",
+          "url": "https://huggingface.co/Docglasses-AI/indic-conformer-600m-sherpa-onnx-int8/resolve/main/indicconformer-hi.int8.onnx",
+          "sha256": "e7d10ea05377022004fb548c3d59bc0c114bd62276f0190410c0da64e16d4930",
+          "sizeBytes": 658569148
+        },
+        {
+          "name": "indicconformer-tokens.txt",
+          "url": "https://huggingface.co/Docglasses-AI/indic-conformer-600m-sherpa-onnx-int8/resolve/main/indicconformer-tokens.txt",
+          "sha256": "d4130fcac3d8300b5c225070b01a23487087835465b6898ea5ebf7023e7e55b4",
+          "sizeBytes": 68875
+        }
+      ],
+      "installedSizeBytes": 658638023,
+      "licence": "MIT",
+      "source": "https://huggingface.co/ai4bharat/indic-conformer-600m-multilingual (sherpa-onnx packaging by Docglasses-AI)",
+      "tier": "heavy",
+      "peakRamMb": 1400,
+      "params": {
+        "model": "indicconformer-hi.int8.onnx",
+        "tokens": "indicconformer-tokens.txt"
+      },
+      "notes": "For 6 GB+ phones. Add to routing.byLanguage to use it for its language only."
+    },
+    {
+      "id": "indicconformer-ta-int8",
+      "kind": "ASR",
+      "engine": "sherpa-nemo-ctc",
+      "displayName": "IndicConformer 600M Tamil (int8)",
+      "description": "AI4Bharat IndicConformer 600M multilingual, CTC head masked to Tamil. Strongest Indic accuracy; one 628 MB file per language.",
+      "languages": [
+        "ta"
+      ],
+      "files": [
+        {
+          "name": "indicconformer-ta.int8.onnx",
+          "url": "https://huggingface.co/Docglasses-AI/indic-conformer-600m-sherpa-onnx-int8/resolve/main/indicconformer-ta.int8.onnx",
+          "sha256": "89773ffd03c20f150ec28406d8fb7e21a6a2017fa7d994eec03521dda85c65a7",
+          "sizeBytes": 658569148
+        },
+        {
+          "name": "indicconformer-tokens.txt",
+          "url": "https://huggingface.co/Docglasses-AI/indic-conformer-600m-sherpa-onnx-int8/resolve/main/indicconformer-tokens.txt",
+          "sha256": "d4130fcac3d8300b5c225070b01a23487087835465b6898ea5ebf7023e7e55b4",
+          "sizeBytes": 68875
+        }
+      ],
+      "installedSizeBytes": 658638023,
+      "licence": "MIT",
+      "source": "https://huggingface.co/ai4bharat/indic-conformer-600m-multilingual (sherpa-onnx packaging by Docglasses-AI)",
+      "tier": "heavy",
+      "peakRamMb": 1400,
+      "params": {
+        "model": "indicconformer-ta.int8.onnx",
+        "tokens": "indicconformer-tokens.txt"
+      },
+      "notes": "For 6 GB+ phones. Add to routing.byLanguage to use it for its language only."
+    }
+  ]
+}
